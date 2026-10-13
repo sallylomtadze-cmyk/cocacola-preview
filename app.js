@@ -30,12 +30,16 @@
     float warm=smoothstep(.1,.34,c.r-c.b)*smoothstep(.5,.85,c.r);
     c*=1.+warm*(.5*(noise(a*vec2(46.,26.)+vec2(time*.55,time*.3))-.5)+.22*(noise(a*vec2(120.,68.)-time*1.1)-.5));
     float m=fbm(vec2(a.x*3.+time*.025,a.y*7.-time*.012))*smoothstep(.44,.04,a.y)*.26; c=mix(c,vec3(.86,.91,1.),m);
-    // chimney smoke: a plume that really rises from the house, drifts with the wind and thins out
+    // chimney smoke: the plume painted in the photo is set in motion (its own pixels flow up the column), with fresh puffs rising through it
     vec2 sd=a-vec2(.675,.482); float sh=sd.y, sx=sd.x*1.79;
-    float cxs=sh*.5+sin(sh*26.-time*.7)*sh*.14, ws=.005+sh*.34;
-    float puff=fbm(vec2(sx*38.-time*.12,sh*26.-time*.55));
-    float smoke=exp(-pow((sx-cxs)/ws,2.))*smoothstep(0.,.01,sh)*smoothstep(.2,.02,sh)*(.35+.9*puff);
-    c=mix(c,vec3(.78,.83,.92),clamp(smoke*.95,0.,.8));
+    float cxs=sh*.5+sin(sh*22.-time*.9)*sh*.16, ws=.006+sh*.36;
+    float plume=exp(-pow((sx-cxs)/ws,2.))*smoothstep(0.,.008,sh)*smoothstep(.27,.04,sh);
+    vec2 fdv=vec2(.5/1.79,1.)*.06; float f1=fract(time*.17), f2=fract(time*.17+.5);
+    vec2 wob=(vec2(noise(a*60.+time*.5),noise(a*60.-time*.4))-.5)*.006;
+    vec3 fl=texture2D(tA,a-fdv*f1+wob).rgb*(1.-abs(2.*f1-1.))+texture2D(tA,a-fdv*f2+wob).rgb*(1.-abs(2.*f2-1.));
+    c=mix(c,max(c,fl),plume*.85);
+    float puff=fbm(vec2(sx*30.-time*.2,sh*20.-time*1.1));
+    c=mix(c,vec3(.8,.85,.93),clamp(plume*(.12+1.25*puff*puff)*.8,0.,.82));
     vec3 sk=mix(vec3(.03,.07,.16),vec3(.012,.025,.07),uv.y);
     vec2 g=uv*vec2(ra,1.)*70.; vec2 id=floor(g); float hs=hash(id); vec2 f=fract(g)-.5-(vec2(hash(id+3.1),hash(id+7.7))-.5)*.7;
     sk+=smoothstep(.02+.07*hs,0.,length(f))*step(.8,hs)*(.55+.45*sin(time*(1.+3.*hs)+hs*30.));
