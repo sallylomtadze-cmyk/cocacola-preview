@@ -272,14 +272,9 @@
   let wdir = 1, lastY = scrollY, tv = 0, sitK = 0;
   // sound is on by default; browsers only let it start after the first click or key press, so it is armed then and plays when the truck drives in
   let soundOn = true, snd = null, wasTruck = false; const sbtn = $('.hd-sound'); sbtn.classList.add('on'); sbtn.setAttribute('aria-pressed', true);
-  snd = new Audio('audio/truck.mp3?v=1791906551'); snd.loop = true; snd.volume = 0; snd.preload = 'auto'; snd.addEventListener('error', () => sbtn.title = 'audio/truck.mp3 ვერ მოიძებნა');
+  snd = new Audio('audio/truck.mp3?v=1791907146'); snd.loop = true; snd.volume = 0; snd.preload = 'auto'; snd.addEventListener('error', () => sbtn.title = 'audio/truck.mp3 ვერ მოიძებნა');
   const arm = () => { if (soundOn && wasTruck && snd.paused) snd.play().catch(() => { }); };
   ['pointerdown', 'keydown', 'touchend', 'wheel'].forEach(e => addEventListener(e, arm, { passive: true }));
-  { const gate = $('#gate'), go = on => { soundOn = on; sbtn.classList.toggle('on', on); sbtn.setAttribute('aria-pressed', on);
-      if (on) { const p = snd.play(); if (p) p.then(() => { if (!wasTruck) snd.pause(); }).catch(() => { }); }   // unlock playback with this click, keep it silent until the truck
-      gate.classList.add('off'); document.body.classList.remove('gated'); };
-    if (new URLSearchParams(location.search).has('at') || new URLSearchParams(location.search).has('x')) gate.classList.add('off'); else document.body.classList.add('gated');
-    $('#enterSound').addEventListener('click', () => go(true)); $('#enterMute').addEventListener('click', () => go(false)); }
   sbtn.addEventListener('click', () => { arm(); soundOn = !soundOn; sbtn.classList.toggle('on', soundOn); sbtn.setAttribute('aria-pressed', soundOn); });
 
   /* ---------- game: join seven stars into the Great Bear ---------- */
