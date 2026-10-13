@@ -63,7 +63,7 @@
     try {
       const T = THREE, R = new T.WebGLRenderer({ canvas: cv, alpha: true, antialias: true }); R.setPixelRatio(1); R.setSize(714, 868, false);
       const U = { t: { value: new T.TextureLoader().load('img/bear-sit.webp') }, head: { value: 0 }, arm: { value: 0 }, breath: { value: 0 } };
-      const mat = new T.ShaderMaterial({ uniforms: U, blending: T.NoBlending, fragmentShader: 'uniform sampler2D t;varying vec2 vUv;void main(){vec4 c=texture2D(t,vUv);gl_FragColor=vec4(c.rgb*.93*c.a,c.a);}',
+      const mat = new T.ShaderMaterial({ uniforms: U, blending: T.NoBlending, fragmentShader: 'uniform sampler2D t;varying vec2 vUv;void main(){vec4 c=texture2D(t,vUv);vec3 k=c.rgb;float l=dot(k,vec3(.3,.59,.11));k=mix(k,vec3(l),.3)*vec3(.8,.87,1.02);k*=mix(.7,1.,smoothstep(0.,.42,vUv.y));k+=vec3(.015,.035,.085)*(1.-smoothstep(0.,.32,vUv.y));k+=vec3(.05,.03,.0)*smoothstep(.55,1.,vUv.x)*l;float al=c.a*smoothstep(.012,.05,vUv.y);gl_FragColor=vec4(k*al,al);}',
         vertexShader: `uniform float head,arm,breath; varying vec2 vUv;
         vec2 rot(vec2 p,vec2 c,float a){p-=c;return c+vec2(p.x*cos(a)-p.y*sin(a),p.x*sin(a)+p.y*cos(a));}
         void main(){vUv=uv; vec2 p=uv*vec2(714.,868.);
@@ -262,7 +262,7 @@
     wg.drawImage(rig.body, 0, bob);
     leg(rig.ha, 0, 178, 78, 205, ph, 0); leg(rig.f, 298, 178, 362, 196, ph + .7, 0);
   }
-  let wdir = 1, lastY = scrollY, tv = 0, gs = 0;
+  let wdir = 1, lastY = scrollY, tv = 0, sitK = 0;
   // sound is on by default; browsers only let it start after the first click or key press, so it is armed then and plays when the truck drives in
   let soundOn = true, snd = null, wasTruck = false; const sbtn = $('.hd-sound'); sbtn.classList.add('on'); sbtn.setAttribute('aria-pressed', true);
   snd = new Audio('audio/truck.mp3'); snd.loop = true; snd.volume = 0; snd.preload = 'auto'; snd.addEventListener('error', () => sbtn.title = 'audio/truck.mp3 ვერ მოიძებნა');
@@ -326,12 +326,13 @@
     // truck music, only after the visitor switched sound on
     if (snd) { const inT = ot > .05; if (inT && !wasTruck) { try { snd.currentTime = 0; } catch (e) { } } wasTruck = inT; const want = soundOn && inT ? .8 : 0; snd.volume = clamp(snd.volume + (want - snd.volume) * Math.min(1, dt * (want ? 4 : 1.5)), 0, 1); if (want && snd.paused) snd.play().catch(() => { }); else if (!want && snd.volume < .02 && !snd.paused) snd.pause(); }
     const bin = ss(1.3, 2, T), bout = ss(2.2, 2.95, T); bank.style.transform = `translateY(${((1 - bin) + bout) * 104}%)`; bank.style.visibility = bin > .02 && bout < .98 ? 'visible' : 'hidden'; bank.classList.toggle('live', bin > .8 && bout < .2);
-    // game entrance, by time: the bear walks in from the right to its spot, lowers itself and sits; only then the seated bear is shown
-    gs = og > .5 ? gs + dt : og < .05 ? 0 : gs;
-    const WALK = 3.8, SIT = .8, we = wIn.clientWidth, spot = W * (W < 860 ? .6 : .69), wu = clamp(gs / WALK, 0, 1), sit = clamp((gs - WALK) / SIT, 0, 1), se = sit * sit * (3 - 2 * sit);
-    const wx = lerp(W + 10, spot - we / 2, 1 - Math.pow(1 - wu, 2)), showW = og > .5 && gs < WALK + SIT;
-    wIn.style.opacity = showW ? (1 - se) * og : 0;
-    if (showW) { wIn.style.transformOrigin = '70% 100%'; wIn.style.transform = `translate(${wx}px,${se * 8}px) rotate(${se * -9}deg) scale(1,${1 - se * .1})`; drawRig(wx / (we / 380 * 89) * 6.283, -1, wgIn); }
+    // game entrance, driven by the scroll exactly like the walk across the brands screen but mirrored: the bear that left to the right
+    // comes back in from the right as you keep scrolling, same size, same shadows, same steps; when it reaches its spot it sits down
+    const gS = SEC[3], we = wIn.clientWidth, spot = W * (W < 860 ? .6 : .69), wq = clamp((y - (gS.offsetTop - H * .95)) / (H * 1.05), 0, 1);
+    sitK = clamp(sitK + (wq > .995 ? dt : -dt) / .8, 0, 1); const se = sitK * sitK * (3 - 2 * sitK);
+    const wx = lerp(W + 10, spot - we / 2, wq), showW = wq > 0 && T < 3.6 && se < 1;
+    wIn.style.opacity = showW ? Math.min(1, wq * 10) * (1 - se) * (1 - ss(3.25, 3.6, T)) : 0;
+    if (showW) { wIn.style.transformOrigin = '70% 100%'; wIn.style.transform = `translate(${wx}px,${se * 8}px) rotate(${se * -9}deg) scale(1,${1 - se * .1})`; drawRig(wx / (we / 380 * 89) * 6.283, -wdir, wgIn); }
     const ogd = se * og;
     const od = Math.max(1 - ss(.3, .8, T), ogd); duo.style.opacity = od; { const R = W - duo.offsetLeft - duo.offsetWidth, bw = $('.duo-bear').clientWidth, tx = T > 2 ? spot - (W - R - bw * .62 / 2) : 0; duo.style.transform = `translate(${tx}px,${T > 2 ? -H * .025 + (1 - se) * 16 : 0}px) scale(${T > 2 ? .62 : 1 - .1 * ss(0, .8, T)})`; } $('.mound').style.opacity = T > 2 ? 0 : 1; dbottle.style.opacity = T > 2 ? 0 : 1;
     hill.style.opacity = og; scene.style.setProperty('--scrim', Math.max(oh, og * .7, ot * .6, of * .8));
