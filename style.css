@@ -21,6 +21,14 @@ h2{font-size:clamp(28px,3.4vw,46px);font-weight:800;line-height:1.14;letter-spac
 @media (hover:none){.cursor{display:none}}
 
 /* the page opens like breath clearing from cold glass */
+/* entry: one click lets the browser play sound later, exactly when the truck drives in */
+.gate{position:fixed;inset:0;z-index:95;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:radial-gradient(120% 90% at 50% 40%,rgba(10,18,40,.72),rgba(4,8,20,.92));-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);transition:opacity .7s var(--e),visibility .7s}
+.gate img{height:44px;margin-bottom:18px}
+.gate-mute{background:none;border:0;cursor:pointer;font-size:13px;font-weight:600;color:rgba(255,255,255,.7);padding:8px 4px;border-bottom:1px solid rgba(255,255,255,.4)}
+.gate-mute:hover{color:#fff}
+.gate.off{opacity:0;visibility:hidden;pointer-events:none}
+body.gated{overflow:hidden}
+body.gated .thaw,body.gated .hero-copy h1 b,body.gated .hero-copy p,body.gated .cta{animation-play-state:paused}
 .thaw{position:fixed;inset:-10%;z-index:90;pointer-events:none;background:radial-gradient(60% 55% at 62% 60%,rgba(236,244,255,0) 0,rgba(226,236,252,.55) 55%,rgba(214,228,250,.9) 100%),radial-gradient(40% 40% at 25% 30%,rgba(255,255,255,.6),transparent 70%);will-change:opacity,transform;animation:thaw 2.2s cubic-bezier(.4,0,.2,1) .2s forwards}
 @keyframes thaw{to{opacity:0;transform:scale(1.25);visibility:hidden}}
 .lantern{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;background:radial-gradient(420px circle at var(--lx,70%) var(--ly,60%),rgba(255,214,150,.3),rgba(255,180,120,.08) 45%,transparent 70%);transition:opacity .6s}
