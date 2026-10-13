@@ -73,11 +73,13 @@
     if (!window.THREE) { const im = new Image(); im.src = 'img/bear-sit.webp'; im.id = 'bear'; cv.replaceWith(im); return null; }
     try {
       const T = THREE, R = new T.WebGLRenderer({ canvas: cv, alpha: true, antialias: true }); R.setPixelRatio(1); R.setSize(714, 868, false);
-      const U = { t: { value: new T.TextureLoader().load('img/bear-sit.webp') }, head: { value: 0 }, arm: { value: 0 }, breath: { value: 0 } };
-      const mat = new T.ShaderMaterial({ uniforms: U, blending: T.NoBlending, fragmentShader: 'uniform sampler2D t;varying vec2 vUv;void main(){vec4 c=texture2D(t,vUv);vec3 k=c.rgb;float l=dot(k,vec3(.3,.59,.11));k=mix(k,vec3(l),.3)*vec3(.8,.87,1.02);k*=mix(.7,1.,smoothstep(0.,.42,vUv.y));k+=vec3(.015,.035,.085)*(1.-smoothstep(0.,.32,vUv.y));k+=vec3(.05,.03,.0)*smoothstep(.55,1.,vUv.x)*l;float al=c.a*smoothstep(.012,.05,vUv.y);gl_FragColor=vec4(k*al,al);}',
-        vertexShader: `uniform float head,arm,breath; varying vec2 vUv;
+      const U = { t: { value: new T.TextureLoader().load('img/bear-sit.webp') }, head: { value: 0 }, arm: { value: 0 }, breath: { value: 0 }, blink: { value: 0 }, scarf: { value: 0 }, sway: { value: 0 } };
+      const mat = new T.ShaderMaterial({ uniforms: U, blending: T.NoBlending, fragmentShader: 'uniform sampler2D t;uniform float blink;varying vec2 vUv;void main(){vec4 c=texture2D(t,vUv);float ey=max(smoothstep(.034,.014,length((vUv-vec2(.616,.925))*vec2(1.,1.25))),smoothstep(.034,.014,length((vUv-vec2(.466,.917))*vec2(1.,1.25))));c=mix(c,texture2D(t,vUv+vec2(0.,.032)),blink*ey);vec3 k=c.rgb;float l=dot(k,vec3(.3,.59,.11));k=mix(k,vec3(l),.3)*vec3(.8,.87,1.02);k*=mix(.7,1.,smoothstep(0.,.42,vUv.y));k+=vec3(.015,.035,.085)*(1.-smoothstep(0.,.32,vUv.y));k+=vec3(.05,.03,.0)*smoothstep(.55,1.,vUv.x)*l;float al=c.a*smoothstep(.012,.05,vUv.y);gl_FragColor=vec4(k*al,al);}',
+        vertexShader: `uniform float head,arm,breath,scarf,sway; varying vec2 vUv;
         vec2 rot(vec2 p,vec2 c,float a){p-=c;return c+vec2(p.x*cos(a)-p.y*sin(a),p.x*sin(a)+p.y*cos(a));}
         void main(){vUv=uv; vec2 p=uv*vec2(714.,868.);
+          p=rot(p,vec2(400.,20.),sway*smoothstep(80.,620.,p.y));
+          float wsc=smoothstep(160.,40.,distance(p,vec2(333.,394.)))*step(p.y,512.); p=rot(p,vec2(335.,506.),scarf*wsc);
           float wh=smoothstep(290.,150.,distance(p,vec2(330.,738.)))*smoothstep(520.,610.,p.y); p=rot(p,vec2(398.,594.),head*wh);
           float wa=smoothstep(215.,95.,distance(p,vec2(80.,478.))); p=rot(p,vec2(238.,413.),arm*wa);
           float wb=smoothstep(330.,120.,distance(p,vec2(400.,348.))); p.x+=(p.x-400.)*breath*wb*.022; p.y+=breath*wb*3.;
@@ -86,7 +88,7 @@
       return { U, draw() { R.render(sc, cam); } };
     } catch (e) { return null; }
   })();
-  let headS = 0, waveT = 2.6, lookUp = 0;
+  let headS = 0, waveT = 2.6, lookUp = 0, blinkAt = 3, blinkV = 0;
 
   /* ---------- snow: three depths, wind, cursor push, sparkle trail, and it settles on things ---------- */
   const cv = $('#snow'), cx = cv.getContext('2d');
@@ -371,7 +373,10 @@
     // bear puppet
     if (puppet && od > .01) { lookUp += ((T > 2.5 ? 1 : 0) - lookUp) * dt * 3; waveT += dt; if (waveT > 6.5 && T < 1) waveT = 0;
       const target = lerp((my - .55) * .42 + (mx - .7) * .12, -.24, lookUp) + Math.sin(t * .7) * .03; headS += (target - headS) * Math.min(1, dt * 4);
-      puppet.U.head.value = headS; puppet.U.arm.value = waveT < 2.4 ? Math.sin(waveT * 9) * .2 * Math.sin(waveT / 2.4 * Math.PI) : Math.sin(t * .9) * .03 + (mx - .5) * -.05; puppet.U.breath.value = Math.sin(t * 1.35) * 1.5; puppet.draw(); }
+      puppet.U.head.value = headS; puppet.U.arm.value = waveT < 2.4 ? Math.sin(waveT * 9) * .2 * Math.sin(waveT / 2.4 * Math.PI) : Math.sin(t * .9) * .03 + (mx - .5) * -.05; puppet.U.breath.value = Math.sin(t * 1.35) * 1.5;
+      if (t > blinkAt) blinkAt = t + rnd(2.4, 6) + (Math.random() < .25 ? -2.1 : 0);                      // blinks, sometimes twice
+      blinkV = clamp(1 - Math.abs(t - (blinkAt - .1)) / .1, 0, 1) > 0 ? clamp(1 - Math.abs((blinkAt - t) - .1) / .1, 0, 1) : 0; puppet.U.blink.value = blinkV;
+      puppet.U.scarf.value = Math.sin(t * 1.1) * .045 + Math.sin(t * 2.7 + 1) * .018 + headS * .25; puppet.U.sway.value = Math.sin(t * .45) * .012 + Math.sin(t * .2 + 2) * .006; puppet.draw(); }
     // walking bear on the ridge
     if (bin > .05 && bout < .98) { const wEl = wcv.clientWidth, x = lerp(-wEl, W, pb), xc = x + wEl / 2, yv = ridge(xc), sl = (ridge(xc + 40) - ridge(xc - 40)) / 80;
       wcv.style.transform = `translate(${x}px,${yv - wcv.clientHeight * .93}px) rotate(${Math.atan(sl) * (wdir > 0 ? 1 : 1) * .6}rad)`; drawRig(x / (wEl / 380 * 89) * 6.283, wdir); }
