@@ -300,8 +300,9 @@
     let h = $('#hintg'); if (h) h.remove(); if (gi > 0) return;
     const [x, y] = SP[0]; h = mk('g', { id: 'hintg', class: 'hint' });
     h.appendChild(mk('path', { d: `M${x + 16},${y + 16} L${x + 62},${y + 62} H${x + 96}`, class: 'ha', pathLength: 1 }));
-    h.appendChild(mk('rect', { x: x + 96, y: y + 40, width: 232, height: 44, rx: 22, class: 'hp' }));
-    const t = mk('text', { x: x + 212, y: y + 68, 'text-anchor': 'middle', class: 'ht' }); t.textContent = 'დაიწყე აქედან'; h.appendChild(t);
+    const r = mk('rect', { x: x + 96, y: y + 40, width: 190, height: 44, rx: 22, class: 'hp' }); h.appendChild(r);
+    const t = mk('text', { x: x + 120, y: y + 62, 'dominant-baseline': 'central', class: 'ht' }); t.textContent = 'დაიწყე აქედან'; h.appendChild(t);
+    requestAnimationFrame(() => { const w = t.getBBox().width; if (w) r.setAttribute('width', w + 48); }); // equal padding around the label
     svg.insertBefore(h, svg.querySelector('.st'));
   }
   const line = (a, b) => $('#lines').appendChild(mk('line', { class: 'ln', x1: a[0], y1: a[1], x2: b[0], y2: b[1] }));
