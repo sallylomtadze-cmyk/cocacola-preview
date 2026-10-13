@@ -164,6 +164,7 @@ main{position:relative;z-index:1;pointer-events:none}
 .strip{display:grid;grid-template-columns:repeat(7,1fr);gap:12px}
 .logo{position:relative;display:grid;place-items:center;height:clamp(96px,10vw,140px);padding:0 16%;border-radius:20px;background:#fff;box-shadow:0 10px 24px -14px rgba(40,70,120,.35),inset 0 0 0 1px rgba(40,70,120,.08);transition:transform .5s var(--e)}
 .logo img{max-height:clamp(42px,4.4vw,62px);max-width:100%;width:auto;object-fit:contain}
+.logo img[alt="Piko"],.logo img[alt="BonAqua"],.logo img[alt="Schweppes"],.logo img[alt="Fuze Tea"]{max-height:clamp(54px,5.6vw,78px)}
 .logo:hover{transform:translateY(-6px)}
 
 /* game: the Great Bear in the night sky */
@@ -180,7 +181,8 @@ main{position:relative;z-index:1;pointer-events:none}
 #stars .rb{stroke:rgba(255,255,255,.5);stroke-width:1.5;stroke-dasharray:4 6}
 #stars .st{cursor:pointer}
 #stars .st .c{fill:#fff;opacity:.85;filter:drop-shadow(0 0 5px rgba(255,255,255,.9));transition:all .4s}
-#stars .st .h{fill:#fff;opacity:0;transition:all .5s}
+#stars .st .h{fill:#fff;opacity:.07;transition:all .5s}
+#stars .st:focus-visible{outline:none}#stars .st:focus-visible .h{opacity:.3}
 #stars .st.next .h{opacity:.22;animation:beat 1.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
 #stars .st.lit .c{opacity:1;filter:drop-shadow(0 0 8px #fff) drop-shadow(0 0 18px rgba(160,255,220,.9))}
 #stars .st.lit .h{opacity:0}
@@ -199,7 +201,18 @@ main{position:relative;z-index:1;pointer-events:none}
 .truck img{width:100%;animation:tglow 2.6s ease-in-out infinite}
 @keyframes tglow{0%,100%{filter:drop-shadow(0 0 14px rgba(255,120,40,.3))}50%{filter:brightness(1.07) drop-shadow(0 0 28px rgba(255,150,60,.55))}}
 /* each rim is a round window onto the same picture, so it can turn */
-.wheel{--r:30;position:absolute;left:calc((var(--cx) - var(--r)) / 1292 * 100%);top:calc((var(--cy) - var(--r)) / 412 * 100%);width:calc(var(--r) * 2 / 1292 * 100%);aspect-ratio:1;border-radius:50%;background:url(img/truck.webp?v=1791887252) calc((var(--cx) - var(--r)) / (1292 - var(--r) * 2) * 100%) calc((var(--cy) - var(--r)) / (412 - var(--r) * 2) * 100%)/calc(1292 / (var(--r) * 2) * 100%) auto;transform:rotate(var(--rot,0rad))}
+.wheel{--r:30;position:absolute;left:calc((var(--cx) - var(--r)) / 1292 * 100%);top:calc((var(--cy) - var(--r)) / 412 * 100%);width:calc(var(--r) * 2 / 1292 * 100%);aspect-ratio:1;border-radius:50%;overflow:hidden;-webkit-mask:radial-gradient(closest-side,#000 86%,transparent);mask:radial-gradient(closest-side,#000 86%,transparent)}
+/* moving: the rim blurs around its own axle and a faint sharp copy turns in the wheel's plane; standing: the photo shows through */
+.wheel b{position:absolute;inset:0;background:url(img/wheel-b.webp) calc(var(--i) * 33.333%) 0/400% 100%;opacity:calc(var(--spd,0) * .84)}
+.wheel b+b{background-image:url(img/wheel-s.webp);opacity:calc(var(--spd,0) * .38);transform-origin:calc(50% + var(--ox,0) * 1.667%) calc(50% + var(--oy,0) * 1.667%);transform:scaleX(var(--sx,1)) rotate(var(--rot,0rad)) scaleX(calc(1 / var(--sx,1)))}
+/* the gift the truck leaves behind: it stands where the trailer was, then opens as you scroll */
+.gift{--go:0;position:absolute;left:50%;bottom:5.2vh;width:min(12vw,220px);aspect-ratio:436/410;transform:translateX(-50%) scale(calc(1 + var(--go) * .95));transform-origin:50% 100%;opacity:0;filter:brightness(1.1) drop-shadow(0 0 30px rgba(255,70,40,.14))}
+.gift>img,.gift>div,.gift>span{position:absolute}
+.g-back,.g-front{inset:0;width:100%;height:100%}
+.g-sh{left:-26%;right:-26%;bottom:6%;height:26%;border-radius:50%;background:radial-gradient(closest-side,rgba(6,18,46,.6),rgba(6,18,46,.28) 55%,transparent);filter:blur(6px)}
+.g-items{left:9%;right:9%;top:-140%;bottom:5%;overflow:hidden}
+.g-items img{position:absolute;left:var(--x);bottom:calc(var(--b) / 2.35);height:calc(var(--h) / 2.35);width:auto;transform-origin:50% 100%;transform:translateY(calc((1 - clamp(0, (var(--go) - var(--d)) * 1.9, 1)) * 150%)) rotate(var(--r));filter:drop-shadow(-6px 4px 8px rgba(40,0,0,.45))}
+.g-lid{left:50%;top:0;width:126%;transform:translate(-52%,calc(-38% - var(--go) * 175%)) rotate(calc(var(--go) * -8deg))}
 .truck-snow{position:absolute;left:0;right:0;bottom:0;height:11vh;background:url(img/snow-bank.webp) 50% 0/cover}
 .menu a:nth-child(6){transition-delay:.2s}
 
@@ -258,7 +271,7 @@ main{position:relative;z-index:1;pointer-events:none}
   #walker,#walkin{width:230px;height:133px}
   .game-copy{top:92px}.game-copy p{font-size:14px}
   #stars{left:4vw;right:4vw;top:44vh;height:30vh}
-  .truckui h2{left:24px;top:18vh}.truck{width:118vw;bottom:10vh}
+  .truckui h2{left:24px;top:18vh}.truck{width:118vw;bottom:10vh}.gift{width:26vw;bottom:6vh}
   #greet{left:24px;width:86vw;height:calc(17vh + 86vw * .2336)}.fin-links{left:24px;right:24px;grid-template-columns:1fr;gap:0}.lk{padding:16px 2px}
   .ft-cols{grid-template-columns:1fr 1fr}
 }

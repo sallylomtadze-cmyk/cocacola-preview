@@ -70,11 +70,11 @@
   /* ---------- the sitting bear is a soft puppet: it watches the cursor, breathes and waves ---------- */
   const puppet = (() => {
     const cv = $('#bear');
-    if (!window.THREE) { const im = new Image(); im.src = 'img/bear-sit.webp'; im.id = 'bear'; cv.replaceWith(im); return null; }
+    if (!window.THREE) { const im = new Image(); im.src = 'img/bear-sit.webp?v=2'; im.id = 'bear'; cv.replaceWith(im); return null; }
     try {
       const T = THREE, R = new T.WebGLRenderer({ canvas: cv, alpha: true, antialias: true }); R.setPixelRatio(1); R.setSize(714, 868, false);
-      const U = { t: { value: new T.TextureLoader().load('img/bear-sit.webp') }, head: { value: 0 }, arm: { value: 0 }, breath: { value: 0 }, blink: { value: 0 }, scarf: { value: 0 }, sway: { value: 0 } };
-      const mat = new T.ShaderMaterial({ uniforms: U, blending: T.NoBlending, fragmentShader: 'uniform sampler2D t;uniform float blink;varying vec2 vUv;void main(){vec4 c=texture2D(t,vUv);float ey=max(smoothstep(.034,.014,length((vUv-vec2(.616,.925))*vec2(1.,1.25))),smoothstep(.034,.014,length((vUv-vec2(.466,.917))*vec2(1.,1.25))));c=mix(c,texture2D(t,vUv+vec2(0.,.032)),blink*ey);vec3 k=c.rgb;float l=dot(k,vec3(.3,.59,.11));k=mix(k,vec3(l),.3)*vec3(.8,.87,1.02);k*=mix(.7,1.,smoothstep(0.,.42,vUv.y));k+=vec3(.015,.035,.085)*(1.-smoothstep(0.,.32,vUv.y));k+=vec3(.05,.03,.0)*smoothstep(.55,1.,vUv.x)*l;float al=c.a*smoothstep(.012,.05,vUv.y);gl_FragColor=vec4(k*al,al);}',
+      const U = { t: { value: new T.TextureLoader().load('img/bear-sit.webp?v=2') }, head: { value: 0 }, arm: { value: 0 }, breath: { value: 0 }, blink: { value: 0 }, scarf: { value: 0 }, sway: { value: 0 } };
+      const mat = new T.ShaderMaterial({ uniforms: U, blending: T.NoBlending, fragmentShader: 'uniform sampler2D t;uniform float blink;varying vec2 vUv;void main(){vec4 c=texture2D(t,vUv);float ey=max(smoothstep(.016,.006,length((vUv-vec2(.347,.925))*vec2(1.,1.25))),smoothstep(.034,.014,length((vUv-vec2(.466,.916))*vec2(1.,1.25))));c=mix(c,texture2D(t,vUv+vec2(0.,vUv.x<.4?.014:.032)),blink*ey);vec3 k=c.rgb;float l=dot(k,vec3(.3,.59,.11));k=mix(k,vec3(l),.3)*vec3(.8,.87,1.02);k*=mix(.7,1.,smoothstep(0.,.42,vUv.y));k+=vec3(.015,.035,.085)*(1.-smoothstep(0.,.32,vUv.y));k+=vec3(.05,.03,.0)*smoothstep(.55,1.,vUv.x)*l;float al=c.a*smoothstep(.012,.05,vUv.y);gl_FragColor=vec4(k*al,al);}',
         vertexShader: `uniform float head,arm,breath,scarf,sway; varying vec2 vUv;
         vec2 rot(vec2 p,vec2 c,float a){p-=c;return c+vec2(p.x*cos(a)-p.y*sin(a),p.x*sin(a)+p.y*cos(a));}
         void main(){vUv=uv; vec2 p=uv*vec2(714.,868.);
@@ -263,7 +263,7 @@
 
   /* ---------- brands: a natural snow bank, and the bear walks its ridge on four moving legs ---------- */
   const bank = $('#bank'), wcv = $('#walker'), wgMain = wcv.getContext('2d'), wIn = $('#walkin'), wgIn = wIn.getContext('2d'), rig = {};
-  ['body', 'ha', 'hb', 'f'].forEach(n => { rig[n] = new Image(); rig[n].src = 'img/rig-' + n + '.webp'; });
+  ['body', 'ha', 'hb', 'f'].forEach(n => { rig[n] = new Image(); rig[n].src = 'img/rig-' + n + '.webp?v=2'; });
   const RIDGE = [6, 19, 35, 40, 39, 39, 31, 30, 37, 47, 49, 48, 46, 44, 45, 48, 54, 61, 69, 72, 71, 64, 56, 57, 59, 60, 60, 61, 72, 80, 85, 89], BW = 1376, BH = 486;
   const ridge = x => { const bh = bank.clientHeight, sc = Math.max(W / BW, bh / BH), u = clamp(((x - (W - BW * sc) / 2) / sc) / 43, 0, RIDGE.length - 1.001), i = Math.floor(u); return (RIDGE[i] + (RIDGE[i + 1] - RIDGE[i]) * (u - i)) * sc; };
   function drawRig(ph, dirn, wg0) {
@@ -293,7 +293,7 @@
     svg.appendChild(mk('g', { id: 'lines' })); svg.appendChild(mk('line', { class: 'rb', id: 'rb' }));
     SP.forEach((p, i) => { const g = mk('g', { class: 'st' + (i ? '' : ' next') }); g.appendChild(mk('circle', { class: 'h', cx: p[0], cy: p[1], r: 26 })); g.appendChild(mk('circle', { class: 'c', cx: p[0], cy: p[1], r: i % 3 ? 5.5 : 7 })); g.appendChild(mk('circle', { cx: p[0], cy: p[1], r: 48, fill: 'transparent' }));
       const hit = () => { if (i !== gi) return; g.classList.remove('next'); g.classList.add('lit'); if (gi) line(SP[gi - 1], SP[gi]); const r = g.children[1].getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, 12, 110); gi++; $('#gN').textContent = gi; if (gi === 7) { line(SP[6], SP[3]); win(); } hint(); };
-      g.addEventListener('pointerenter', hit); g.addEventListener('pointerdown', hit); svg.appendChild(g); });
+      g.addEventListener('pointerenter', hit); g.addEventListener('pointerdown', hit); g.setAttribute('tabindex', 0); g.setAttribute('role', 'button'); g.setAttribute('aria-label', 'ვარსკვლავი ' + (i + 1)); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); hit(); } }); svg.appendChild(g); });
     $('#gN').textContent = 0; $('#gT').textContent = 'იპოვე დიდი დათვი'; $('#gP').textContent = 'შეაერთე 7 ვარსკვლავი რიგრიგობით და ცაზე დიდი დათვის თანავარსკვლავედი გამოჩნდება.'; $('#again').hidden = true; hint();
   }
   function hint() { // a quiet modern cue at the very start only: thin leader line from the first star to a small label
@@ -335,9 +335,9 @@
   }
 
   /* ---------- timeline: scroll position -> chapter T (0 hero, 1 products, 2 brands, 3 game, 4 new year) ---------- */
-  const SEC = ['hero', 'show', 'brands', 'game', 'truck', 'finale'].map(id => $('#' + id)), HOLD = [.45, .78, .5, .6, .62, 1];
+  const SEC = ['hero', 'show', 'brands', 'game', 'truck', 'finale'].map(id => $('#' + id)), HOLD = [.45, .78, .5, .6, .82, 1];
   const K = [{ z: 1, cx: .5, cy: .5, bl: 0, wa: 0, sk: 0, fi: 0, di: 1 }, { z: 1.5, cx: .46, cy: .36, bl: 0, wa: 1, sk: 0, fi: 0, di: .95 }, { z: 1.16, cx: .5, cy: .6, bl: 1.2, wa: 0, sk: 0, fi: 0, di: .85 }, { z: 1, cx: .5, cy: .8, bl: 0, wa: 0, sk: 1, fi: 0, di: 1 }, { z: 1.22, cx: .5, cy: .56, bl: 1.6, wa: 0, sk: 0, fi: 0, di: .78 }, { z: 1, cx: .5, cy: .5, bl: 0, wa: 0, sk: 0, fi: 1, di: 1 }];
-  const L = { hero: $('#heroui'), show: $('#showui'), game: $('#gameui'), fin: $('#finui'), truck: $('#truckui') }, truck = $('#lorry'), duo = $('#duo'), dbottle = $('.duo-bottle'), hill = $('#hill'), scene = $('.scene');
+  const L = { hero: $('#heroui'), show: $('#showui'), game: $('#gameui'), fin: $('#finui'), truck: $('#truckui') }, truck = $('#lorry'), gift = $('#gift'), duo = $('#duo'), dbottle = $('.duo-bottle'), hill = $('#hill'), scene = $('.scene');
   const setL = (el, o, y) => { el.style.opacity = o; el.style.transform = `translateY(${y}px)`; el.classList.toggle('live', o > .6); };
 
   function onResize() { sizeSnow(); if (world) world.size(); }
@@ -355,9 +355,12 @@
     setL(L.hero, oh, -(1 - oh) * 60); setL(L.show, os, 0); setL(L.game, og, (1 - og) * 30); setL(L.fin, of, 0); setL(L.truck, ot, 0); stepGreet(t, dt, of);
     // the truck drives in by itself when its chapter opens: eases to a stop, the cab dips as it brakes, rims turn, snow sprays from the wheels
     tv = ot > .45 ? Math.min(1.4, tv + dt / 10) : ot < .03 ? 0 : tv;      // about ten seconds from the edge to its place, no shaking
-    if (ot > .01) { const tw = truck.clientWidth, u = Math.min(1, tv), e = u < .72 ? u * 1.18 : .8496 + (1 - Math.pow(1 - (u - .72) / .28, 2)) * .1504, out = clamp((p4 - .3) / .5, 0, 1), x = lerp(-tw * 1.05, (W - tw) * .42, e) + out * out * (W - (W - tw) * .42 + 30), settle = tv > 1 ? Math.sin((tv - 1) * 60) * Math.exp(-(tv - 1) * 30) * 1.4 : 0;
-      truck.style.transform = `translate(${x}px,${settle}px)`; truck.style.setProperty('--rot', (x / (tw * 44 / 1292)) + 'rad');
+    if (ot > .01) { const tw = truck.clientWidth, u = Math.min(1, tv), e = u < .72 ? u * 1.18 : .8496 + (1 - Math.pow(1 - (u - .72) / .28, 2)) * .1504, out = clamp((p4 - .18) / .27, 0, 1), x = lerp(-tw * 1.05, (W - tw) * .42, e) + out * out * (W - (W - tw) * .42 + 30), settle = tv > 1 ? Math.sin((tv - 1) * 60) * Math.exp(-(tv - 1) * 30) * 1.4 : 0;
+      truck.style.transform = `translate(${x}px,${settle}px)`; truck.style.setProperty('--rot', (x / (tw * 44 / 1292)) + 'rad'); truck.style.setProperty('--spd', clamp(Math.abs(x - (truck._x ?? x)) / Math.max(dt, .001) / 55, 0, 1).toFixed(3)); truck._x = x;
       if (!CALM && u > .03 && u < .97 && Math.random() < .14) loose(x + tw * rnd(.15, .95), H * .9, 1, 50); }
+    // the gift: uncovered as the trailer pulls away, then the lid lifts and the drinks rise with the scroll
+    { const tx = truck._x ?? -9999, past = clamp((tx - W * .62) / (W * .12), 0, 1), go = ss(.47, .78, p4) * past, seen = (p4 > .2 ? 1 : 0) * ot; gift.style.opacity = seen; gift.style.setProperty('--go', go.toFixed(3)); { const gw = gift.offsetWidth, rev = clamp((tx - (W / 2 - gw / 2 - 8)) / (gw + 16), 0, 1); gift.style.clipPath = rev < 1 ? `inset(-400% ${((1 - rev) * 100).toFixed(1)}% -60% -60%)` : 'none'; } // the trailer's tail uncovers it, nothing peeks out under the truck
+      if (go > .5 && !gift._b && seen > .5) { gift._b = 1; const r = gift.getBoundingClientRect(); if (!CALM) burst(r.left + r.width / 2, r.top, 22, 160); } if (go < .1) gift._b = 0; }
     // truck music, only after the visitor switched sound on
     if (snd) { const inT = ot > .05; if (inT && !wasTruck) { try { snd.currentTime = 0; } catch (e) { } } wasTruck = inT; const want = soundOn && inT ? .8 : 0; snd.volume = clamp(snd.volume + (want - snd.volume) * Math.min(1, dt * (want ? 4 : 1.5)), 0, 1); if (want && snd.paused) snd.play().catch(() => { }); else if (!want && snd.volume < .02 && !snd.paused) snd.pause(); }
     const bin = ss(1.3, 2, T), bout = ss(2.2, 2.95, T); bank.style.transform = `translateY(${((1 - bin) + bout) * 104}%)`; bank.style.visibility = bin > .02 && bout < .98 ? 'visible' : 'hidden'; bank.classList.toggle('live', bin > .8 && bout < .2);
