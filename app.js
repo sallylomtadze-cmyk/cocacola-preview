@@ -311,8 +311,8 @@
   function frame(now) {
     const dt = Math.min(.05, (now - t0) / 1000), t = now / 1000; t0 = now;
     const y = scrollY, dS = y - scrollY0; scrollY0 = y; if (Math.abs(y - lastY) > 2) { wdir = y > lastY ? 1 : -1; lastY = y; }
-    let T = 0, cp = 0, pb = 0, pt = 0;
-    SEC.forEach((s, i) => { const p = clamp((y - s.offsetTop) / s.offsetHeight, 0, 1); if (i === 1) cp = clamp(p / .74, 0, 1); if (i === 2) pb = clamp((y - s.offsetTop + H * .6) / (s.offsetHeight + H * .3), 0, 1); if (i === 4) pt = clamp((y - s.offsetTop + H * .7) / (s.offsetHeight * .55 + H * .7), 0, 1); if (p > 0) T = i + ss(HOLD[i], 1, p); }); T = Math.min(T, 5);
+    let T = 0, cp = 0, pb = 0, pt = 0, p4 = 0;
+    SEC.forEach((s, i) => { const p = clamp((y - s.offsetTop) / s.offsetHeight, 0, 1); if (i === 1) cp = clamp(p / .74, 0, 1); if (i === 2) pb = clamp((y - s.offsetTop + H * .6) / (s.offsetHeight + H * .3), 0, 1); if (i === 4) p4 = p; if (i === 4) pt = clamp((y - s.offsetTop + H * .7) / (s.offsetHeight * .55 + H * .7), 0, 1); if (p > 0) T = i + ss(HOLD[i], 1, p); }); T = Math.min(T, 5);
     const i0 = Math.min(4, Math.floor(T)), k = T - i0, A = K[i0], B = K[i0 + 1], mix = n => lerp(A[n], B[n], k);
     if (world) { const U = world.U; U.time.value = t;  U.cen.value.set(mix('cx'), mix('cy')); U.zoom.value = mix('z'); U.blur.value = mix('bl'); U.washA.value = mix('wa'); U.sky.value = mix('sk'); U.fin.value = mix('fi'); U.dim.value = mix('di'); U.wash.value.setRGB(washC[0] / 255, washC[1] / 255, washC[2] / 255); U.aur.value += ((1 + aurBoost * 1.6) - U.aur.value) * dt * 2; world.draw(); }
     // layers
@@ -320,7 +320,7 @@
     setL(L.hero, oh, -(1 - oh) * 60); setL(L.show, os, 0); setL(L.game, og, (1 - og) * 30); setL(L.fin, of, (1 - of) * 30); setL(L.truck, ot, 0);
     // the truck drives in by itself when its chapter opens: eases to a stop, the cab dips as it brakes, rims turn, snow sprays from the wheels
     tv = ot > .45 ? Math.min(1.4, tv + dt / 10) : ot < .03 ? 0 : tv;      // about ten seconds from the edge to its place, no shaking
-    if (ot > .01) { const tw = truck.clientWidth, u = Math.min(1, tv), e = u < .72 ? u * 1.18 : .8496 + (1 - Math.pow(1 - (u - .72) / .28, 2)) * .1504, x = lerp(-tw * 1.05, (W - tw) * .42, e), settle = tv > 1 ? Math.sin((tv - 1) * 60) * Math.exp(-(tv - 1) * 30) * 1.4 : 0;
+    if (ot > .01) { const tw = truck.clientWidth, u = Math.min(1, tv), e = u < .72 ? u * 1.18 : .8496 + (1 - Math.pow(1 - (u - .72) / .28, 2)) * .1504, out = clamp((p4 - .3) / .5, 0, 1), x = lerp(-tw * 1.05, (W - tw) * .42, e) + out * out * (W - (W - tw) * .42 + 30), settle = tv > 1 ? Math.sin((tv - 1) * 60) * Math.exp(-(tv - 1) * 30) * 1.4 : 0;
       truck.style.transform = `translate(${x}px,${settle}px)`; truck.style.setProperty('--rot', (x / (tw * 44 / 1292)) + 'rad');
       if (!CALM && u > .03 && u < .97 && Math.random() < .14) loose(x + tw * rnd(.15, .95), H * .9, 1, 50); }
     // truck music, only after the visitor switched sound on

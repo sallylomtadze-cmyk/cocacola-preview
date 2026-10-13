@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex">
 <title>კოკა-კოლას ჯადოსნური სამყარო | კოკა-კოლა საქართველო</title>
 <link rel="preload" as="image" href="img/bg-night.jpg">
-<link rel="stylesheet" href="style.css?v=1791900810">
+<link rel="stylesheet" href="style.css?v=1791901517">
 </head>
 <body>
 
@@ -75,7 +75,7 @@
   </div>
 
   <div class="layer finui" id="finui">
-    <h2 class="mt">გილოცავთ ახალ 2027 წელს</h2>
+    <h2 class="mt" data-t="გილოცავთ ახალ 2027 წელს">გილოცავთ ახალ 2027 წელს</h2>
     <div class="fin-links">
       <a class="lk mt" href="https://www.coca-cola.com/ge/ka/sustainability">მდგრადობა<span class="btn-i"></span></a>
       <a class="lk mt" href="https://www.coca-cola.com/ge/ka/social">სოციალური<span class="btn-i"></span></a>
@@ -84,6 +84,10 @@
   </div>
 </div>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <filter id="frost" x="-5%" y="-10%" width="110%" height="125%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G"/></filter>
+  <filter id="drift2" x="-5%" y="-30%" width="110%" height="160%"><feTurbulence type="fractalNoise" baseFrequency=".03 .08" numOctaves="2" seed="9" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="10" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="1.1"/></filter>
+</defs></svg>
 <canvas id="snow" aria-hidden="true"></canvas>
 <div class="thaw" aria-hidden="true"></div>
 
@@ -137,6 +141,6 @@
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="app.js?v=1791900810"></script>
+<script src="app.js?v=1791901517"></script>
 </body>
 </html>
