@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ka">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>კოკა-კოლას ჯადოსნური სამყარო | კოკა-კოლა საქართველო</title>
+<link rel="preload" as="image" href="img/bg-night.jpg">
+<link rel="stylesheet" href="style.css?v=1791900377">
+</head>
+<body>
+
+<!-- one living winter world stays on screen; the scroll moves the camera through it -->
+<canvas id="world" aria-hidden="true"></canvas>
+
+<div class="scene">
+  <div class="hill" id="hill"></div>
+  <canvas id="walkin" width="760" height="440" aria-hidden="true"></canvas>
+  <div class="duo" id="duo">
+    <div class="duo-bottle"><img src="img/bottle.webp" alt="Coca-Cola მინის ბოთლი"></div>
+    <div class="duo-bear"><canvas id="bear" width="714" height="868" aria-label="თეთრი დათვი წითელი შარფით"></canvas><span class="breath"></span></div>
+    <span class="mound"></span>
+  </div>
+
+  <div class="layer hero-copy" id="heroui">
+    <h1 class="mt"><span><b>კოკა-კოლას</b></span><span><b>ჯადოსნური</b></span><span><b>სამყარო</b></span></h1>
+    <p>აღმოაჩინე საყვარელი ბრენდების საოცარი კამპანიები და ბოლო სიახლეები, კოკა-კოლასა და ფანტას მრავალფეროვანი ემოციებიდან წყალი „მთის“ მისტიკურ ძალებამდე.</p>
+    <div class="cta">
+      <a class="btn btn-red" href="#show"><span class="btn-t mt">ნახე პროდუქტები</span><span class="btn-i"></span></a>
+      <a class="btn btn-white" href="#game"><span class="btn-t mt">იპოვე დიდი დათვი</span></a>
+    </div>
+  </div>
+
+  <div class="layer showui" id="showui">
+    <div class="show-stage" id="stage"></div>
+    <div class="show-copy">
+      <h2 id="pName"></h2>
+      <p class="mt" id="pKind"></p>
+      <div class="show-dots" id="dots"></div>
+    </div>
+  </div>
+
+  <div class="layer bank" id="bank">
+    <img id="drift" src="img/snow-bank.webp" alt="">
+    <canvas id="walker" width="760" height="440" aria-hidden="true"></canvas>
+    <div class="bank-in">
+      <div class="bank-head">
+        <h2 class="mt">გაეცანით ჩვენს ბრენდებს</h2>
+        <a class="btn btn-red" href="https://www.coca-cola.com/ge/ka/brands"><span class="btn-t mt">ყველა ბრენდი</span><span class="btn-i"></span></a>
+      </div>
+      <div class="strip">
+        <a class="logo" href="https://www.coca-cola.com/ge/ka/brands"><img src="img/l-coca-cola.png" alt="Coca-Cola"></a>
+        <a class="logo" href="https://www.coca-cola.com/ge/ka/brands"><img src="img/l-fanta.png" alt="Fanta"></a>
+        <a class="logo" href="https://www.coca-cola.com/ge/ka/brands"><img src="img/l-sprite.png" alt="Sprite"></a>
+        <a class="logo" href="https://www.coca-cola.com/ge/ka/brands"><img src="img/l-fuzetea.png" alt="Fuze Tea"></a>
+        <a class="logo" href="https://www.coca-cola.com/ge/ka/brands"><img src="img/l-piko.svg" alt="Piko"></a>
+        <a class="logo" href="https://www.coca-cola.com/ge/ka/brands"><img src="img/l-bonaqua.png" alt="BonAqua"></a>
+        <a class="logo" href="https://www.coca-cola.com/ge/ka/brands"><img src="img/l-schweppes.png" alt="Schweppes"></a>
+      </div>
+    </div>
+  </div>
+
+  <div class="layer gameui" id="gameui">
+    <div class="game-copy">
+      <h2 class="mt" id="gT">იპოვე დიდი დათვი</h2>
+      <p id="gP">შეაერთე 7 ვარსკვლავი რიგრიგობით და ცაზე დიდი დათვის თანავარსკვლავედი გამოჩნდება.</p>
+      <div class="game-row"><span class="count">შეერთებულია <b id="gN">0</b> / 7</span><button class="btn btn-white" id="again" hidden><span class="btn-t mt">თავიდან</span></button></div>
+    </div>
+    <svg id="stars" viewBox="0 0 1000 520" aria-label="დიდი დათვის თანავარსკვლავედი"></svg>
+  </div>
+
+  <div class="layer truckui" id="truckui">
+    <h2 class="mt">ზეიმი მოდის</h2>
+    <div class="truck" id="lorry"><img src="img/truck.webp?v=1791887252" alt="Coca-Cola-ს საახალწლო სატვირთო"><i class="wheel" style="--cx:300;--cy:360"></i><i class="wheel" style="--cx:412;--cy:360"></i><i class="wheel" style="--cx:693;--cy:360"></i><i class="wheel" style="--cx:1135;--cy:360"></i></div>
+    <div class="truck-snow"></div>
+  </div>
+
+  <div class="layer finui" id="finui">
+    <h2 class="mt">გილოცავთ ახალ 2027 წელს</h2>
+    <div class="fin-links">
+      <a class="lk mt" href="https://www.coca-cola.com/ge/ka/sustainability">მდგრადობა<span class="btn-i"></span></a>
+      <a class="lk mt" href="https://www.coca-cola.com/ge/ka/social">სოციალური<span class="btn-i"></span></a>
+      <a class="lk mt" href="https://www.coca-cola.com/ge/ka/about-us/history">ისტორია<span class="btn-i"></span></a>
+    </div>
+  </div>
+</div>
+
+<canvas id="snow" aria-hidden="true"></canvas>
+<div class="thaw" aria-hidden="true"></div>
+
+<header class="hd">
+  <a class="hd-logo" href="#hero" aria-label="The Coca-Cola Company"><img src="img/tccc-white.svg" alt="The Coca-Cola Company"></a>
+  <button class="hd-sound" aria-label="ხმა" aria-pressed="false"><i></i><i></i><i></i><i></i></button>
+  <button class="hd-burger" aria-label="მენიუ" aria-expanded="false"><i></i><i></i><i></i></button>
+</header>
+<div class="menu mt" hidden>
+  <a href="#show">პროდუქტები</a>
+  <a href="#brands">ბრენდები</a>
+  <a href="https://www.coca-cola.ge/videos">აღმოაჩინე</a>
+  <a href="#game">თამაში</a>
+  <a href="#truck">ზეიმი მოდის</a>
+  <a href="#finale">გავლენა</a>
+</div>
+
+
+<!-- scroll length for each chapter -->
+<main>
+  <section id="hero" style="height:110vh"></section>
+  <section id="show" style="height:420vh"></section>
+  <section id="brands" style="height:190vh"></section>
+  <section id="game" style="height:200vh"></section>
+  <section id="truck" style="height:200vh"></section>
+  <section id="finale" style="height:150vh"></section>
+</main>
+
+<footer class="ft">
+  <div class="wrap">
+    <div class="ft-top">
+      <img src="img/tccc-white.svg" alt="The Coca-Cola Company">
+      <a class="ft-geo" href="https://www.coca-cola.com/country-selector">Georgia</a>
+    </div>
+    <div class="ft-cols">
+      <div><span>ჩვენ შესახებ</span>
+        <a href="https://www.coca-colacompany.com/company">ჩვენი კომპანია</a>
+        <a href="https://www.coca-cola.com/ge/ka/about-us/history">ისტორია</a></div>
+      <div><span>გჭირდებათ დახმარება?</span>
+        <a href="https://www.coca-cola.com/ge/ka/sitemap">ვებ-გვერდის რუკა</a>
+        <a href="https://www.coca-cola.com/ge/ka/about-us/contact-us">დაგვიკავშირდით</a></div>
+      <div><span>&nbsp;</span>
+        <a href="https://datatrust.coca-cola.com/ge/ka#global-privacy-notices">მომხმარებლის კონფიდენციალურობის შეტყობინება</a>
+        <a href="https://www.coca-cola.com/ge/ka/legal/terms-of-service">გამოყენების პირობები</a></div>
+      <div class="ft-soc">
+        <a href="https://www.instagram.com/cocacola_geo/">Instagram</a>
+        <a href="https://www.youtube.com/watch?v=4XKBJYgl9DM&list=PLCIVZWq1FAwd4iXgQroBwA5NjviQkUB1V">YouTube</a>
+        <a href="https://www.facebook.com/CocaColaGEO">Facebook</a></div>
+    </div>
+    <p class="ft-c">© 2026 The Coca-Cola Company. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="app.js?v=1791900377"></script>
+</body>
+</html>
