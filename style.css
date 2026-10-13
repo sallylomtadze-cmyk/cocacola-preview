@@ -190,9 +190,23 @@ main{position:relative;z-index:1;pointer-events:none}
 .finui{inset:0}
 .finui::before{content:"";position:absolute;inset:auto 0 0 0;height:34vh;background:linear-gradient(0deg,rgba(4,8,20,.72),transparent)}
 .finui h2{position:absolute;left:clamp(56px,7vw,110px);top:24vh;width:min(620px,84vw);font-size:clamp(34px,4.6vw,68px);text-shadow:0 4px 30px rgba(0,10,30,.6)}
-/* the greeting is written in snow: packed-snow letters with soft blue shade, rough frozen edges, and fresh snow lying on top of every line */
-.snowtext{line-height:1.16;color:transparent;background:linear-gradient(180deg,#ffffff 0,#fbfdff 45%,#dfeaf9 78%,#bcd1ee 100%),url(img/snow-bank.webp) 0 40%/520px;background-blend-mode:multiply;-webkit-background-clip:text;background-clip:text;text-shadow:none!important;filter:url(#frost) drop-shadow(0 1px 0 rgba(255,255,255,.9)) drop-shadow(0 12px 22px rgba(0,18,56,.55))}
-.snowtext::before{content:attr(data-t);position:absolute;left:0;top:-.07em;width:100%;color:#fff;-webkit-text-fill-color:#fff;background:none;-webkit-mask:repeating-linear-gradient(180deg,#000 0,#000 .2em,transparent .4em,transparent 1.16em);mask:repeating-linear-gradient(180deg,#000 0,#000 .2em,transparent .4em,transparent 1.16em);filter:url(#drift2);pointer-events:none}
+/* the greeting is written by the snowfall itself: thousands of flakes drift down and settle into the letters (see stepGreet) */
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+#greet{position:absolute;left:clamp(56px,7vw,110px);top:0;width:min(780px,84vw);height:calc(21vh + min(780px,84vw) * .2336);filter:drop-shadow(0 0 16px rgba(190,255,228,.3)) drop-shadow(0 10px 24px rgba(0,15,50,.55));pointer-events:none}
+/* greeting, three art directions to choose from: ?g=1 aurora light, ?g=2 ice outline, ?g=3 written in the snow */
+.greet-alt,.snowband{display:none}
+.g1 #greet,.g2 #greet,.g3 #greet{display:none}
+.g1 .greet-alt,.g2 .greet-alt,.g3 .greet-alt{display:block;position:absolute;left:clamp(56px,7vw,110px);top:21vh;font-weight:800;line-height:1.06;letter-spacing:.01em;text-shadow:none}
+.greet-alt{white-space:nowrap;width:max-content!important}
+.greet-alt b{font-weight:inherit}
+.g1 .greet-alt{font-size:clamp(40px,5.6vw,88px);color:transparent;background:linear-gradient(100deg,#fff 0,#e6fff4 18%,#8df3c6 36%,#c4ecff 54%,#fff 72%,#a6f6d2 100%) 0 0/260% 100%;-webkit-background-clip:text;background-clip:text;animation:aur 8s ease-in-out infinite alternate;filter:drop-shadow(0 0 24px rgba(130,255,200,.4)) drop-shadow(0 10px 24px rgba(0,15,50,.5))}
+@keyframes aur{to{background-position:100% 0}}
+.g2 .greet-alt{font-size:clamp(42px,6vw,96px);color:rgba(255,255,255,.1);-webkit-text-stroke:1.5px rgba(255,255,255,.95);filter:drop-shadow(0 0 18px rgba(190,235,255,.45)) drop-shadow(0 10px 24px rgba(0,15,50,.45))}
+.g2 .greet-alt b{color:#fff;-webkit-text-stroke:0}
+.g3 .snowband{display:block;position:absolute;left:0;right:0;bottom:0;height:31vh;background:url(img/snow-bank.webp) 50% 0/cover}
+.g3 .finui::before{display:none}
+.g3 .greet-alt{top:auto;bottom:7vh;left:50%;width:max-content;font-size:clamp(36px,5.4vw,88px);line-height:1;color:rgba(96,126,180,.5);text-shadow:1.5px 2px 1px rgba(255,255,255,.95),-1.5px -2px 3px rgba(40,66,120,.55);transform:translateX(-50%) perspective(900px) rotateX(46deg);transform-origin:50% 100%;filter:blur(.35px)}
+.g3 .fin-links{bottom:auto;top:21vh;right:auto;width:min(620px,84vw)}
 .fin-links{position:absolute;left:clamp(56px,7vw,110px);right:clamp(56px,7vw,110px);bottom:clamp(40px,8vh,84px);display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(20px,3vw,48px)}
 .lk{display:flex;align-items:center;justify-content:space-between;padding:22px 2px 0;border-top:1.5px solid rgba(255,255,255,.45);font-size:clamp(17px,1.5vw,22px);font-weight:700;color:#fff;transition:border-color .3s}
 .lk:hover{border-color:#fff}
@@ -228,7 +242,7 @@ main{position:relative;z-index:1;pointer-events:none}
   .game-copy{top:92px}.game-copy p{font-size:14px}
   #stars{left:4vw;right:4vw;top:44vh;height:30vh}
   .truckui h2{left:24px;top:18vh}.truck{width:118vw;bottom:10vh}
-  .finui h2{left:24px;top:16vh}.fin-links{left:24px;right:24px;grid-template-columns:1fr;gap:0}.lk{padding:16px 2px}
+  #greet{left:24px;width:86vw;height:calc(17vh + 86vw * .2336)}.fin-links{left:24px;right:24px;grid-template-columns:1fr;gap:0}.lk{padding:16px 2px}
   .ft-cols{grid-template-columns:1fr 1fr}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.thaw{display:none}.hero-copy h1 b{transform:none}}

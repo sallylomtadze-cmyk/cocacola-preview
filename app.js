@@ -10,6 +10,7 @@
   const CALM = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let W = innerWidth, H = innerHeight, scrollY0 = scrollY, mx = .5, my = .5, px = -999, py = -999;
 
+  { const g = new URLSearchParams(location.search).get('g'); if (g) { document.body.classList.remove('g1'); document.body.classList.add('g' + g); } } // greeting variant for review
   /* ---------- header + menu ---------- */
   const hd = $('.hd'), menu = $('.menu');
   $('.hd-burger').addEventListener('click', () => { const o = menu.hidden; menu.hidden = !o; hd.classList.toggle('open', o); $('.hd-burger').setAttribute('aria-expanded', o); });
@@ -299,6 +300,27 @@
   svg.addEventListener('pointermove', e => { const rb = $('#rb'); if (!gi || gi > 6 || !rb) return; const m = svg.getScreenCTM().inverse(), x = e.clientX * m.a + m.e, y = e.clientY * m.d + m.f; rb.setAttribute('x1', SP[gi - 1][0]); rb.setAttribute('y1', SP[gi - 1][1]); rb.setAttribute('x2', x); rb.setAttribute('y2', y); });
   $('#again').addEventListener('click', resetGame); resetGame();
 
+  /* ---------- greeting: the falling snow settles into the words, sparkles, and scatters under the cursor ---------- */
+  const gcv = $('#greet'), gg = gcv.getContext('2d'), gim = new Image(), gpts = []; let gIn = 0;
+  gim.onload = () => { const w = 350, h = 82, c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(gim, 0, 0, w, h); const d = x.getImageData(0, 0, w, h).data, N = W < 860 ? 3000 : 6400; let tries = 0;
+    while (gpts.length < N && tries++ < N * 40) { const qx = Math.random() * w, qy = Math.random() * h; if (d[((qy | 0) * w + (qx | 0)) * 4 + 3] > 150) gpts.push({ hx: qx / w, hy: qy / h, sx: qx / w + rnd(-.12, .12), sy: -rnd(.3, 2.6), r: rnd(.5, 1.7), a: rnd(.5, 1), ph: rnd(0, 6.28), tw: rnd(1, 4), dl: Math.random() * .9, ox: 0, oy: 0 }); } };
+  gim.src = 'img/greet.png';
+  function stepGreet(t, dt, vis) {
+    gIn = vis > .3 ? Math.min(2, gIn + dt / 1.5) : Math.max(0, gIn - dt * 1.2); if (gIn <= 0 || !gpts.length) { if (gcv.width) gg.clearRect(0, 0, gcv.width, gcv.height); return; }
+    const D = Math.min(devicePixelRatio || 1, 2), cw = gcv.clientWidth, chh = gcv.clientHeight; if (gcv.width !== Math.round(cw * D)) { gcv.width = Math.round(cw * D); gcv.height = Math.round(chh * D); }
+    gg.setTransform(D, 0, 0, D, 0, 0); gg.clearRect(0, 0, cw, chh);
+    const th = cw * 327 / 1400, oy = chh - th, r = gcv.getBoundingClientRect(), mxp = px - r.left, myp = py - r.top;
+    gg.globalAlpha = .46 * clamp(gIn - .9, 0, 1) * vis; gg.drawImage(gim, 0, oy, cw, th);            // faint body so the words read at once
+    gg.fillStyle = '#fff';
+    for (let i = 0; i < gpts.length; i++) { const p = gpts[i], k = clamp(gIn - p.dl, 0, 1), e = 1 - Math.pow(1 - k, 3);
+      const tx = p.hx * cw + Math.sin(t * .9 + p.ph) * .7, ty = oy + p.hy * th + Math.cos(t * .7 + p.ph) * .7;
+      let x = lerp(p.sx * cw, tx, e) + Math.sin(t * 1.5 + p.ph) * (1 - e) * 16, y = lerp(oy + p.sy * th, ty, e);
+      const dx = x - mxp, dy = y - myp, d2 = dx * dx + dy * dy; if (d2 < 4900 && d2 > 1) { const f = (1 - d2 / 4900) * 5; p.ox += dx / Math.sqrt(d2) * f; p.oy += dy / Math.sqrt(d2) * f; }
+      p.ox *= .9; p.oy *= .9; x += p.ox; y += p.oy;
+      gg.globalAlpha = p.a * (.55 + .45 * Math.sin(t * p.tw + p.ph)) * vis * Math.min(1, k * 3); gg.drawImage(dot, x - p.r * 1.7, y - p.r * 1.7, p.r * 3.4, p.r * 3.4); }
+    gg.globalAlpha = 1;
+  }
+
   /* ---------- timeline: scroll position -> chapter T (0 hero, 1 products, 2 brands, 3 game, 4 new year) ---------- */
   const SEC = ['hero', 'show', 'brands', 'game', 'truck', 'finale'].map(id => $('#' + id)), HOLD = [.45, .78, .5, .6, .62, 1];
   const K = [{ z: 1, cx: .5, cy: .5, bl: 0, wa: 0, sk: 0, fi: 0, di: 1 }, { z: 1.5, cx: .46, cy: .36, bl: 0, wa: 1, sk: 0, fi: 0, di: .95 }, { z: 1.16, cx: .5, cy: .6, bl: 1.2, wa: 0, sk: 0, fi: 0, di: .85 }, { z: 1, cx: .5, cy: .8, bl: 0, wa: 0, sk: 1, fi: 0, di: 1 }, { z: 1.22, cx: .5, cy: .56, bl: 1.6, wa: 0, sk: 0, fi: 0, di: .78 }, { z: 1, cx: .5, cy: .5, bl: 0, wa: 0, sk: 0, fi: 1, di: 1 }];
@@ -317,7 +339,7 @@
     if (world) { const U = world.U; U.time.value = t;  U.cen.value.set(mix('cx'), mix('cy')); U.zoom.value = mix('z'); U.blur.value = mix('bl'); U.washA.value = mix('wa'); U.sky.value = mix('sk'); U.fin.value = mix('fi'); U.dim.value = mix('di'); U.wash.value.setRGB(washC[0] / 255, washC[1] / 255, washC[2] / 255); U.aur.value += ((1 + aurBoost * 1.6) - U.aur.value) * dt * 2; world.draw(); }
     // layers
     const oh = 1 - ss(.12, .55, T), os = ss(.55, .98, T) * (1 - ss(1.04, 1.5, T)), og = ss(2.7, 3, T) * (1 - ss(3.25, 3.7, T)), ot = ss(3.6, 4, T) * (1 - ss(4.5, 4.9, T)), of = ss(4.7, 5, T);
-    setL(L.hero, oh, -(1 - oh) * 60); setL(L.show, os, 0); setL(L.game, og, (1 - og) * 30); setL(L.fin, of, (1 - of) * 30); setL(L.truck, ot, 0);
+    setL(L.hero, oh, -(1 - oh) * 60); setL(L.show, os, 0); setL(L.game, og, (1 - og) * 30); setL(L.fin, of, 0); setL(L.truck, ot, 0); stepGreet(t, dt, of);
     // the truck drives in by itself when its chapter opens: eases to a stop, the cab dips as it brakes, rims turn, snow sprays from the wheels
     tv = ot > .45 ? Math.min(1.4, tv + dt / 10) : ot < .03 ? 0 : tv;      // about ten seconds from the edge to its place, no shaking
     if (ot > .01) { const tw = truck.clientWidth, u = Math.min(1, tv), e = u < .72 ? u * 1.18 : .8496 + (1 - Math.pow(1 - (u - .72) / .28, 2)) * .1504, out = clamp((p4 - .3) / .5, 0, 1), x = lerp(-tw * 1.05, (W - tw) * .42, e) + out * out * (W - (W - tw) * .42 + 30), settle = tv > 1 ? Math.sin((tv - 1) * 60) * Math.exp(-(tv - 1) * 30) * 1.4 : 0;
