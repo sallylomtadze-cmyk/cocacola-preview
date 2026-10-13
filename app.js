@@ -88,7 +88,7 @@
       return { U, draw() { R.render(sc, cam); } };
     } catch (e) { return null; }
   })();
-  let headS = 0, waveT = 2.6, lookUp = 0, blinkAt = 3, blinkV = 0;
+  let gs = 0, headS = 0, waveT = 2.6, lookUp = 0, blinkAt = 3, blinkV = 0;
 
   /* ---------- snow: three depths, wind, cursor push, sparkle trail, and it settles on things ---------- */
   const cv = $('#snow'), cx = cv.getContext('2d');
@@ -337,7 +337,7 @@
   /* ---------- timeline: scroll position -> chapter T (0 hero, 1 products, 2 brands, 3 game, 4 new year) ---------- */
   const SEC = ['hero', 'show', 'brands', 'game', 'truck', 'finale'].map(id => $('#' + id)), HOLD = [.45, .78, .5, .6, .82, 1];
   const K = [{ z: 1, cx: .5, cy: .5, bl: 0, wa: 0, sk: 0, fi: 0, di: 1 }, { z: 1.5, cx: .46, cy: .36, bl: 0, wa: 1, sk: 0, fi: 0, di: .95 }, { z: 1.16, cx: .5, cy: .6, bl: 1.2, wa: 0, sk: 0, fi: 0, di: .85 }, { z: 1, cx: .5, cy: .8, bl: 0, wa: 0, sk: 1, fi: 0, di: 1 }, { z: 1.22, cx: .5, cy: .56, bl: 1.6, wa: 0, sk: 0, fi: 0, di: .78 }, { z: 1, cx: .5, cy: .5, bl: 0, wa: 0, sk: 0, fi: 1, di: 1 }];
-  const L = { hero: $('#heroui'), show: $('#showui'), game: $('#gameui'), fin: $('#finui'), truck: $('#truckui') }, truck = $('#lorry'), gift = $('#gift'), duo = $('#duo'), dbottle = $('.duo-bottle'), hill = $('#hill'), scene = $('.scene');
+  const L = { hero: $('#heroui'), show: $('#showui'), game: $('#gameui'), fin: $('#finui'), truck: $('#truckui') }, truck = $('#lorry'), gift = $('#gift'), gLid = $('.g-lid'), gGlow = $('.g-glow'), gBeam = $('.g-beam'), gItems = [...document.querySelectorAll('.g-items img')], duo = $('#duo'), dbottle = $('.duo-bottle'), hill = $('#hill'), scene = $('.scene');
   const setL = (el, o, y) => { el.style.opacity = o; el.style.transform = `translateY(${y}px)`; el.classList.toggle('live', o > .6); };
 
   function onResize() { sizeSnow(); if (world) world.size(); }
@@ -358,9 +358,23 @@
     if (ot > .01) { const tw = truck.clientWidth, u = Math.min(1, tv), e = u < .72 ? u * 1.18 : .8496 + (1 - Math.pow(1 - (u - .72) / .28, 2)) * .1504, out = clamp((p4 - .18) / .27, 0, 1), x = lerp(-tw * 1.05, (W - tw) * .42, e) + out * out * (W - (W - tw) * .42 + 30), settle = tv > 1 ? Math.sin((tv - 1) * 60) * Math.exp(-(tv - 1) * 30) * 1.4 : 0;
       truck.style.transform = `translate(${x}px,${settle}px)`; truck.style.setProperty('--rot', (x / (tw * 44 / 1292)) + 'rad'); truck.style.setProperty('--spd', clamp(Math.abs(x - (truck._x ?? x)) / Math.max(dt, .001) / 55, 0, 1).toFixed(3)); truck._x = x;
       if (!CALM && u > .03 && u < .97 && Math.random() < .14) loose(x + tw * rnd(.15, .95), H * .9, 1, 50); }
-    // the gift: uncovered as the trailer pulls away, then the lid lifts and the drinks rise with the scroll
-    { const tx = truck._x ?? -9999, past = clamp((tx - W * .62) / (W * .12), 0, 1), go = ss(.47, .78, p4) * past, seen = (p4 > .2 ? 1 : 0) * ot; gift.style.opacity = seen; gift.style.setProperty('--go', go.toFixed(3)); { const gw = gift.offsetWidth, rev = clamp((tx - (W / 2 - gw / 2 - 8)) / (gw + 16), 0, 1); gift.style.clipPath = rev < 1 ? `inset(-400% ${((1 - rev) * 100).toFixed(1)}% -60% -60%)` : 'none'; } // the trailer's tail uncovers it, nothing peeks out under the truck
-      if (go > .5 && !gift._b && seen > .5) { gift._b = 1; const r = gift.getBoundingClientRect(); if (!CALM) burst(r.left + r.width / 2, r.top, 22, 160); } if (go < .1) gift._b = 0; }
+    // the gift: the trailer's tail uncovers it; then the scroll opens it. The scroll only sets the target, a soft follow gives the motion weight.
+    { const tx = truck._x ?? -9999, gw = gift.offsetWidth, gh = gift.offsetHeight, past = clamp((tx - W * .62) / (W * .12), 0, 1), go = ss(.44, .8, p4) * past, seen = (p4 > .2 ? 1 : 0) * ot;
+      gs += (go - gs) * (1 - Math.exp(-dt * 5.5)); const g = gs, back = x => { x = clamp(x, 0, 1); const c = 1.9; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); }, cub = x => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
+      gift.style.opacity = seen; const rev = clamp((tx - (W / 2 - gw / 2 - 8)) / (gw + 16), 0, 1); gift.style.clipPath = rev < 1 ? `inset(-400% ${((1 - rev) * 100).toFixed(1)}% -60% -60%)` : 'none';
+      if (seen > .01) {
+        const ant = Math.sin(clamp(g / .12, 0, 1) * Math.PI), big = W < 860 ? .3 : .6;                                  // a small press before it opens
+        gift.style.transform = `scale(${(1 + cub(g / .9) * big) * (1 + ant * .012)},${(1 + cub(g / .9) * big) * (1 - ant * .028)})`;
+        // lid: pops, rises on an arc, turns away and comes to rest in the snow behind the box
+        const a = clamp((g - .1) / .62, 0, 1), up = Math.sin(a * Math.PI), e = a * a * (3 - 2 * a), land = clamp((a - .86) / .14, 0, 1), bnc = Math.sin(land * Math.PI) * (1 - land) * 5;
+        gLid.style.transform = `translate(${(-e * 56).toFixed(2)}%,${(ant * 4 - up * 235 + e * 132 - bnc).toFixed(2)}%) rotate(${(-up * 13 - e * 6).toFixed(2)}deg)`; gLid.style.zIndex = a > .5 ? 0 : 5;
+        if (land > 0 && !gift._l) { gift._l = 1; const r = gLid.getBoundingClientRect(); if (!CALM) loose(r.left + r.width * .5, r.bottom - 6, 10, 70); } if (a < .5) gift._l = 0;
+        // warm light from inside: flares as the lid lets go, then settles
+        const lit = clamp((g - .1) / .2, 0, 1), fl = lit * (1 - .55 * clamp((g - .45) / .4, 0, 1)); gGlow.style.opacity = fl; gBeam.style.opacity = fl * .9;
+        // drinks: each one rises past the rim with a little overshoot, leans into its place, then barely floats
+        gItems.forEach((im, i) => { const d = +im.dataset.d, k = clamp((g - .26 - d * .9) / .46, 0, 1), eb = back(k), bob = k >= 1 && !CALM ? Math.sin(t * 1.25 + i * 1.7) * .9 : 0;
+          im.style.transform = `translateY(${((1 - eb) * +im.dataset.k + bob).toFixed(2)}%) rotate(${(+im.dataset.r * (.25 + .75 * cub(k))).toFixed(2)}deg)`; });
+        if (g > .3 && !gift._b) { gift._b = 1; const r = gift.getBoundingClientRect(); if (!CALM) burst(r.left + r.width / 2, r.top + r.height * .2, 26, 190); } if (g < .1) gift._b = 0; } }
     // truck music, only after the visitor switched sound on
     if (snd) { const inT = ot > .05; if (inT && !wasTruck) { try { snd.currentTime = 0; } catch (e) { } } wasTruck = inT; const want = soundOn && inT ? .8 : 0; snd.volume = clamp(snd.volume + (want - snd.volume) * Math.min(1, dt * (want ? 4 : 1.5)), 0, 1); if (want && snd.paused) snd.play().catch(() => { }); else if (!want && snd.volume < .02 && !snd.paused) snd.pause(); }
     const bin = ss(1.3, 2, T), bout = ss(2.2, 2.95, T); bank.style.transform = `translateY(${((1 - bin) + bout) * 104}%)`; bank.style.visibility = bin > .02 && bout < .98 ? 'visible' : 'hidden'; bank.classList.toggle('live', bin > .8 && bout < .2);
