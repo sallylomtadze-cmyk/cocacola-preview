@@ -120,14 +120,15 @@
     fragmentShader: 'uniform float t; varying vec3 vN; varying vec3 vV; void main(){ float f = pow(1. - max(dot(vN, vV), 0.), 2.4); vec3 rim = mix(vec3(.75,.9,1.), vec3(1.,.85,.6), smoothstep(-.3,.6,vN.x)); float spec = pow(max(dot(reflect(-normalize(vec3(-.5,.7,.6)), vN), vV), 0.), 60.); float spec2 = pow(max(dot(reflect(-normalize(vec3(.6,.2,.8)), vN), vV), 0.), 24.) * .35; float irid = sin(vN.y * 9. + t * .6) * .5 + .5; vec3 c = rim * f * 1.15 + vec3(1.) * (spec + spec2) + vec3(.4,.2,.6) * f * irid * .25; gl_FragColor = vec4(c, clamp(f * .85 + spec + spec2 + .04, 0., 1.)); }' });
   const lacquer = new T.MeshPhongMaterial({ color: 0x8a0f12, shininess: 80, specular: 0x553333 }), gold = new T.MeshPhongMaterial({ color: 0xc89b3c, shininess: 90, specular: 0xffe0a0, emissive: 0x2a1a00 });
   const baseTex = (() => { const t = TL.load('img/t/globe-base.jpg'); t.encoding = T.sRGBEncoding; t.wrapS = T.RepeatWrapping; t.repeat.set(2, 1); return t; })();
-  const brandBase = (() => { const c = document.createElement('canvas'); c.width = 2048; c.height = 512; const x = c.getContext('2d'), t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.wrapS = T.RepeatWrapping;
-    const bg = new Image(); bg.onload = () => { x.drawImage(bg, 0, 0, 2048, 512); x.fillStyle = 'rgba(120,0,8,.82)'; for (const cx of [512, 1536]) { x.beginPath(); x.ellipse(cx, 256, 330, 150, 0, 0, 6.3); x.fill(); }
-      const lg = new Image(); lg.onload = () => { for (const cx of [512, 1536]) { const w = 520, h = w * lg.height / lg.width; x.drawImage(lg, cx - w / 2, 256 - h / 2, w, h); } t.needsUpdate = true; }; lg.src = 'img/logo-white.png'; t.needsUpdate = true; }; bg.src = 'img/t/globe-base.jpg'; return t; })();
+  const brandBase = (() => { // plain Coca-Cola red with the white script; the canvas matches the band's proportions so the logo is not stretched
+    const c = document.createElement('canvas'); c.width = 2048; c.height = 512; const x = c.getContext('2d'), t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.wrapS = T.RepeatWrapping; t.repeat.set(2, 1);
+    const gr = x.createLinearGradient(0, 0, 0, 512); gr.addColorStop(0, '#c4000c'); gr.addColorStop(.5, '#e2101a'); gr.addColorStop(1, '#a8000a'); x.fillStyle = gr; x.fillRect(0, 0, 2048, 512);
+    const lg = new Image(); lg.onload = () => { const w = 900, h = w * lg.height / lg.width; x.drawImage(lg, 1024 - w / 2, 256 - h / 2, w, h); t.needsUpdate = true; }; lg.src = 'img/logo-white.png'; return t; })();
   function snowGlobe(x, z, img, R = 4, figH = 3.6, brand = false) { // glass dome on a lacquered base, a figure standing on a snow floor inside, snow swirling in the water
     const G = new T.Group(); G.position.set(x, 0, z); scene.add(G); const bh = R * .6, cy = bh + R * .75, fy = cy - R * .7;
-    const band = new T.Mesh(new T.CylinderGeometry(R * .74, R * .86, bh, 64, 1, true), new T.MeshPhongMaterial({ map: brand ? brandBase : baseTex, emissiveMap: brand ? brandBase : baseTex, emissive: 0x3a2008, shininess: 70, specular: 0x664433 })); band.position.y = bh / 2; G.add(band);
+    const band = new T.Mesh(new T.CylinderGeometry(R * .74, R * .86, bh, 64, 1, true), new T.MeshPhongMaterial({ map: brand ? brandBase : baseTex, emissiveMap: brand ? brandBase : baseTex, emissive: brand ? 0x1a0000 : 0x3a2008, shininess: 70, specular: 0x664433 })); band.position.y = bh / 2; G.add(band);
     const lid = new T.Mesh(new T.CircleGeometry(R * .74, 48), lacquer); lid.rotation.x = -Math.PI / 2; lid.position.y = bh; G.add(lid);
-    for (const [y, r] of [[.06, R * .87], [bh, R * .745]]) { const ring = new T.Mesh(new T.TorusGeometry(r, R * .03, 10, 64), gold); ring.rotation.x = Math.PI / 2; ring.position.y = y; G.add(ring); }
+    for (const [y, r] of brand ? [] : [[.06, R * .87], [bh, R * .745]]) { const ring = new T.Mesh(new T.TorusGeometry(r, R * .03, 10, 64), gold); ring.rotation.x = Math.PI / 2; ring.position.y = y; G.add(ring); }
     const fr = Math.sqrt(R * R - (cy - fy) ** 2) * .98, floor = new T.Mesh(new T.SphereGeometry(fr, 40, 10, 0, Math.PI * 2, 0, Math.PI / 2), new T.MeshLambertMaterial({ map: TX('snow', 1, 1), color: 0xffffff })); floor.scale.y = .28; floor.position.y = fy; G.add(floor);
     const under = new T.Mesh(new T.CylinderGeometry(fr, R * .74, fy - bh, 48), new T.MeshLambertMaterial({ map: TX('snow', 1, 1) })); under.position.y = (fy + bh) / 2; G.add(under);
     const fig = new T.Mesh(CARD, new T.MeshBasicMaterial({ transparent: true, alphaTest: .05, map: TL.load(img, t => { t.encoding = T.sRGBEncoding; fig.scale.set(figH * t.image.width / t.image.height, figH, 1); }) }));
@@ -152,16 +153,19 @@
 
   function forest() { // real 3D firs: drooping tiers of snowy branches (one instanced mesh per tier for the whole forest), trunks, and lights + baubles on the decorated ones
     const ok = firs.filter(([x, z, h, d]) => (d && x === 0 && z === -6) || (!occ.some(([ox, oz, r]) => Math.hypot(x - ox, z - oz) < r) && roadDist(x, z) > 7.5));
-    const ft = TX('fir', 3, 2), mat = new T.MeshLambertMaterial({ map: ft, color: 0xa9c8b2, emissive: 0x060d0a }), TIERS = 9, m4 = new T.Matrix4(), q = new T.Quaternion(), s3 = new T.Vector3(), p3 = new T.Vector3();
+    const mats2 = [TX('spruce-wrap'), TX('tree-wrap')].map((t, d) => new T.MeshLambertMaterial({ map: t, emissiveMap: t, emissive: new T.Color().setScalar(d ? .45 : .12) })), TIERS = 9, m4 = new T.Matrix4(), q = new T.Quaternion(), s3 = new T.Vector3(), p3 = new T.Vector3();
     const tier = i => { const r = .3 * (1 - i / 9.6), hh = .22, g = new T.ConeGeometry(r, hh, 26, 3, true), p = g.attributes.position;
       for (let k = 0; k < p.count; k++) { const y = p.getY(k), lo = y < -hh * .3; if (lo) { const a = Math.atan2(p.getZ(k), p.getX(k)), j = .78 + .32 * Math.abs(Math.sin(a * 5.5 + i * 1.3)); p.setX(k, p.getX(k) * j); p.setZ(k, p.getZ(k) * j); p.setY(k, y - (1 - j) * .12); } }
-      g.computeVertexNormals(); g.translate(0, .08 + i * .093 + hh / 2, 0); return g; };
-    for (let i = 0; i < TIERS; i++) { const im = new T.InstancedMesh(tier(i), mat, ok.length); ok.forEach(([x, z, h], n) => { q.setFromAxisAngle(p3.set(0, 1, 0), rnd(0, 6.28)); m4.compose(p3.set(x, 0, z), q, s3.set(h, h, h)); im.setMatrixAt(n, m4); }); scene.add(im); }
+      g.computeVertexNormals(); g.translate(0, .08 + i * .093 + hh / 2, 0);
+      const uv = g.attributes.uv; for (let k = 0; k < p.count; k++) { const x = p.getX(k), z = p.getZ(k), y = p.getY(k), a = Math.atan2(x, z), rr = Math.hypot(x, z) / .3; uv.setXY(k, .5 + .36 * Math.sin(a) * Math.min(1, rr), Math.min(.995, Math.max(.005, y / 1.0))); }
+      return g; };
+    for (const d of [0, 1]) { const set = ok.filter(f => !!f[3] === !!d); if (!set.length) continue;
+      for (let i = 0; i < TIERS; i++) { const im = new T.InstancedMesh(tier(i), mats2[d], set.length); set.forEach(([x, z, h], n) => { q.setFromAxisAngle(p3.set(0, 1, 0), rnd(-.4, .4)); m4.compose(p3.set(x, 0, z), q, s3.set(h * (d ? 1.05 : .8), h, h * (d ? 1.05 : .8))); im.setMatrixAt(n, m4); }); scene.add(im); } }
     const trunk = new T.InstancedMesh(new T.CylinderGeometry(.018, .028, .2, 6).translate(0, .1, 0), new T.MeshLambertMaterial({ color: 0x3a2618 }), ok.length);
     ok.forEach(([x, z, h], n) => { m4.makeScale(h, h, h).setPosition(x, 0, z); trunk.setMatrixAt(n, m4); }); scene.add(trunk);
     const dec = ok.filter(f => f[3]), NB = 46, bulbs = new T.InstancedMesh(new T.SphereGeometry(1, 6, 4), new T.MeshBasicMaterial({ color: 0xffcf7a }), dec.length * NB),
-      balls = new T.InstancedMesh(new T.SphereGeometry(1, 12, 8), new T.MeshPhongMaterial({ color: 0xb3000c, shininess: 110, specular: 0xffffff, emissive: 0x200000 }), dec.length * 14); let b = 0, c = 0;
-    dec.forEach(([x, z, h]) => { for (let k = 0; k < NB + 14; k++) { const t = Math.random(), y = .12 + t * .8, r = .3 * (1 - (y - .08) / .9) * .92, a = rnd(0, 6.28), s = k < NB ? h * .0065 : h * .016;
+      balls = new T.InstancedMesh(new T.SphereGeometry(1, 12, 8), new T.MeshPhongMaterial({ color: 0xb3000c, shininess: 110, specular: 0xffffff, emissive: 0x200000 }), 1); let b = 0, c = 0;
+    dec.forEach(([x, z, h]) => { for (let k = 0; k < NB; k++) { const t = Math.random(), y = .12 + t * .8, r = .3 * (1 - (y - .08) / .9) * .92, a = rnd(0, 6.28), s = k < NB ? h * .0065 : h * .016;
         m4.makeScale(s, s, s).setPosition(x + Math.cos(a) * r * h, y * h, z + Math.sin(a) * r * h); if (k < NB) bulbs.setMatrixAt(b++, m4); else balls.setMatrixAt(c++, m4); }
       const st = new T.Sprite(glow(0xffe3a0, .9)); st.position.set(x, h * .97, z); st.scale.set(h * .12, h * .12, 1); scene.add(st); });
     scene.add(bulbs, balls);
@@ -190,7 +194,7 @@
   // ---------- the truck: the photographic rear view, its lights and the golden tracks it leaves ----------
   const truck = new T.Group(); scene.add(truck);
   const rear = new T.Group(); truck.add(rear);
-  { const L = 12.6, H = L * 412 / 1292, X = 1.3, red = new T.MeshLambertMaterial({ color: 0xc0000a }), chrome = new T.MeshPhongMaterial({ color: 0xc9d2de, shininess: 100, specular: 0xffffff });
+  { const L = 12.6, H = L * 412 / 1292, X = 1.12, red = new T.MeshLambertMaterial({ color: 0xc0000a }), chrome = new T.MeshPhongMaterial({ color: 0xc9d2de, shininess: 100, specular: 0xffffff });
     const z = px => (px / 1292 - .5) * L, y = py => (412 - py) / 412 * H;
     const img = new Image(); img.onload = () => {
       const mk = flip => { const c = document.createElement('canvas'); c.width = 1292; c.height = 412; const x = c.getContext('2d');
@@ -202,19 +206,19 @@
     const box = (w, h, d, zc, yc, m) => { const b = new T.Mesh(new T.BoxGeometry(w, h, d), m); b.position.set(0, yc, zc); rear.add(b); return b; };
     const tb = new T.TextureLoader().load('img/g/truckrear.webp'); tb.encoding = T.sRGBEncoding; tb.repeat.set(.62, .6); tb.offset.set(.19, .4);
     const back = new T.MeshLambertMaterial({ map: tb, emissive: 0x1a0000 });
-    box(X * 2 - .04, y(10) - y(300), z(855) - z(0), (z(855) + z(0)) / 2, (y(10) + y(300)) / 2, [red, red, red, red, red, red]);
+    box(X * 2 - .04, y(10) - y(300), z(855) - z(0), (z(855) + z(0)) / 2, (y(10) + y(300)) / 2, [red, red, new T.MeshLambertMaterial({ color: 0x6e0d14 }), red, red, red]);
     box(2.2, y(95) - y(305), z(1120) - z(860), (z(1120) + z(860)) / 2, (y(95) + y(305)) / 2, red);
     box(1.95, y(215) - y(330), z(1285) - z(1120), (z(1285) + z(1120)) / 2, (y(215) + y(330)) / 2, red);
     // from behind it keeps the photographic rear the visitor liked: the full rear photo stands on the back of the trailer
-    { const rp = new T.Mesh(new T.PlaneGeometry(1, 1).translate(0, .5, 0), new T.MeshLambertMaterial({ map: tb, transparent: true, alphaTest: .06, emissive: 0x1a0000 })); tb.repeat.set(1, 1); tb.offset.set(0, 0); rp.scale.set(4.2, 4.1, 1); rp.rotation.y = Math.PI; rp.position.set(0, 0, z(0) - .04); rear.add(rp); }
+    { const rp = new T.Mesh(new T.PlaneGeometry(1, 1).translate(0, .5, 0), new T.MeshBasicMaterial({ map: tb, transparent: true, alphaTest: .06 })); tb.repeat.set(1, 1); tb.offset.set(0, 0); rp.scale.set(4.1 * 710 / 804, 4.1, 1); rp.rotation.y = Math.PI; rp.position.set(0, 0, z(0) - .04); rear.add(rp); }
     const grille = box(1.2, .9, .05, z(1290), y(275), chrome);
     const wind = box(2.0, .55, .05, z(1118), y(170), new T.MeshPhongMaterial({ color: 0x0b1424, shininess: 120, specular: 0x8899bb })); wind.rotation.x = -.15;
     for (const s of [-1, 1]) { const st = new T.Mesh(new T.CylinderGeometry(.09, .09, 2.4, 10), chrome); st.position.set(s * .95, y(150), z(935)); rear.add(st); }
     const tire = new T.MeshLambertMaterial({ color: 0x14161b }); for (const px of [300, 412, 693, 1135]) for (const s of [-1, 1]) { const w = new T.Mesh(new T.CylinderGeometry(.52, .52, .45, 20), tire); w.rotation.z = Math.PI / 2; w.position.set(s * 1.05, y(360), z(px)); rear.add(w); }
-    for (const s of [-.95, .95]) { const t = new T.Mesh(new T.BoxGeometry(.35, .18, .05), new T.MeshBasicMaterial({ color: 0xff2a20 })); t.position.set(s, y(292), z(0) - .03); rear.add(t); const h2 = new T.Mesh(new T.CircleGeometry(.17, 16), new T.MeshBasicMaterial({ color: 0xfff3d8 })); h2.position.set(s * .8, y(298), z(1292) + .01); rear.add(h2); }
+    for (const s of [-.95, .95]) { const h2 = new T.Mesh(new T.CircleGeometry(.17, 16), new T.MeshBasicMaterial({ color: 0xfff3d8 })); h2.position.set(s * .8, y(298), z(1292) + .01); rear.add(h2); }
     { const n = 2 * 44, b = new T.InstancedMesh(new T.SphereGeometry(.06, 6, 4), new T.MeshBasicMaterial({ color: 0xffc46a }), n), m = new T.Matrix4(); let k = 0;
       for (const s of [-1, 1]) for (let i = 0; i < 44; i++) { m.makeTranslation(s * (X + .02), y(12), z(0) + (i + .5) * (z(855) - z(0)) / 44); b.setMatrixAt(k++, m); } rear.add(b); }
-    rear.position.z = -1.2; }
+    rear.scale.setScalar(1.12); rear.position.z = -1.4; }
   const beam = new T.SpotLight(0xfff0d0, 3, 70, .5, .55, 1.1); beam.position.set(0, 1.6, 6); beam.target.position.set(0, 0, 24); truck.add(beam, beam.target);
   const warm = new T.PointLight(0xffa860, 1.4, 20, 2); warm.position.set(0, 5, -1); truck.add(warm);
 
