@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex">
 <title>კოკა-კოლას ჯადოსნური სამყარო | კოკა-კოლა საქართველო</title>
 <link rel="preload" as="image" href="img/bg-night.jpg">
-<link rel="stylesheet" href="style.css?v=1791920061">
+<link rel="stylesheet" href="style.css?v=1792180033">
 </head>
 <body class="g1">
 
@@ -70,23 +70,13 @@
   </div>
 
   <div class="layer truckui" id="truckui">
-    <div class="gift" id="gift" aria-hidden="true">
-      <span class="g-sh"></span>
-      <img class="g-lid" src="img/gift-lid.webp?v=3" alt="">
-      <img class="g-back" src="img/gift-back.webp?v=3" alt="">
-      <span class="g-glow"></span>
-      <div class="g-items">
-        <img src="img/g-fanta.webp" alt="" data-d="0.1" data-r="-8" data-k="150" style="left:17%;height:23.17%;bottom:8.56%">
-        <img src="img/g-zero.webp" alt="" data-d="0.22" data-r="0" data-k="152" style="left:49%;height:24.18%;bottom:9.57%">
-        <img src="img/g-sprite.webp" alt="" data-d="0.16" data-r="8" data-k="150" style="left:82%;height:23.17%;bottom:8.56%">
-        <img src="img/g-bottle.webp" alt="" data-d="0" data-r="-4" data-k="116" style="left:36%;height:37.78%;bottom:3.02%">
-        <img src="img/g-bottle.webp" alt="" data-d="0.07" data-r="5" data-k="117" style="left:62%;height:36.27%;bottom:3.02%">
-      </div>
-      <img class="g-front" src="img/gift-front.webp?v=3" alt="">
-      <span class="g-beam"></span>
-    </div>
     <div class="truck" id="lorry"><img src="img/truck.webp?v=1791887252" alt="Coca-Cola-ს საახალწლო სატვირთო"><i class="wheel" style="--cx:300;--cy:360;--i:0;--ox:-1.5;--oy:0;--sx:0.95"><b></b><b></b></i><i class="wheel" style="--cx:412;--cy:360;--i:1;--ox:-1.5;--oy:0;--sx:0.95"><b></b><b></b></i><i class="wheel" style="--cx:693;--cy:360;--i:2;--ox:2;--oy:1.5;--sx:0.86"><b></b><b></b></i><i class="wheel" style="--cx:1135;--cy:360;--i:3;--ox:0;--oy:0;--sx:1"><b></b><b></b></i></div>
     <div class="truck-snow"></div>
+  </div>
+
+  <div class="layer playui" id="playui">
+    <img class="play-truck" src="img/truck.webp" alt="">
+    <button class="btn btn-red" id="playbtn"><span class="btn-t mt">მართე სატვირთო</span><span class="btn-i"></span></button>
   </div>
 
   <div class="layer finui" id="finui">
@@ -111,6 +101,17 @@
   <svg viewBox="0 0 500 500"><path d="M250.0,214.0 L250.0,18.0 M206.0,54.0 L250.0,98.0 L294.0,54.0 M220.0,130.0 L250.0,158.0 L280.0,130.0" pathLength="1"/><path d="M281.2,232.0 L450.9,134.0 M397.7,113.9 L381.6,174.0 L441.7,190.1 M338.9,164.0 L329.7,204.0 L368.9,216.0" pathLength="1"/><path d="M281.2,268.0 L450.9,366.0 M441.7,309.9 L381.6,326.0 L397.7,386.1 M368.9,284.0 L329.7,296.0 L338.9,336.0" pathLength="1"/><path d="M250.0,286.0 L250.0,482.0 M294.0,446.0 L250.0,402.0 L206.0,446.0 M280.0,370.0 L250.0,342.0 L220.0,370.0" pathLength="1"/><path d="M218.8,268.0 L49.1,366.0 M102.3,386.1 L118.4,326.0 L58.3,309.9 M161.1,336.0 L170.3,296.0 L131.1,284.0" pathLength="1"/><path d="M218.8,232.0 L49.1,134.0 M58.3,190.1 L118.4,174.0 L102.3,113.9 M131.1,216.0 L170.3,204.0 L161.1,164.0" pathLength="1"/><circle cx="250" cy="250" r="238" pathLength="1"/></svg>
   <img src="img/logo-white.png" alt="">
 </div>
+<div class="play" id="play" hidden>
+  <canvas id="playcv"></canvas>
+  <div id="playhud">
+    <div class="p-top"><span class="p-pill p-cnt" id="pcnt"></span></div>
+    <span id="pmsg" hidden></span>
+    <button class="p-x" id="pclose" aria-label="დახურვა"><i></i><i></i></button>
+    <div class="p-arrow" id="parrow" hidden><i></i><b id="pdist"></b></div>
+    <div class="p-stick" id="pstick"><span id="pknob"></span></div>
+    <div class="p-fin" id="pfin" hidden><h2 class="mt">Holidays are coming</h2><div class="p-row"><button class="btn btn-red" id="pagain"><span class="btn-t mt">თავიდან</span></button><button class="btn btn-white" id="pexit"><span class="btn-t mt">საიტზე დაბრუნება</span></button></div></div>
+  </div>
+</div>
 <header class="hd">
   <a class="hd-logo" href="#hero" aria-label="The Coca-Cola Company"><img src="img/tccc-white.svg" alt="The Coca-Cola Company"></a>
   <button class="hd-sound" aria-label="ხმა" aria-pressed="false"><i></i><i></i><i></i><i></i></button>
@@ -127,11 +128,12 @@
 
 <!-- scroll length for each chapter -->
 <main>
+  <section id="open" style="height:170vh"></section>
   <section id="hero" style="height:110vh"></section>
   <section id="show" style="height:420vh"></section>
   <section id="brands" style="height:190vh"></section>
   <section id="game" style="height:200vh"></section>
-  <section id="truck" style="height:320vh"></section>
+  <section id="truck" style="height:170vh"></section>
   <section id="finale" style="height:150vh"></section>
 </main>
 
@@ -161,6 +163,6 @@
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="app.js?v=1791920061"></script>
+<script src="app.js?v=1792180033"></script>
 </body>
 </html>

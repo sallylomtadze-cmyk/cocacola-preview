@@ -205,16 +205,6 @@ main{position:relative;z-index:1;pointer-events:none}
 /* moving: the rim blurs around its own axle and a faint sharp copy turns in the wheel's plane; standing: the photo shows through */
 .wheel b{position:absolute;inset:0;background:url(img/wheel-b.webp) calc(var(--i) * 33.333%) 0/400% 100%;opacity:calc(var(--spd,0) * .84)}
 .wheel b+b{background-image:url(img/wheel-s.webp);opacity:calc(var(--spd,0) * .38);transform-origin:calc(50% + var(--ox,0) * 1.667%) calc(50% + var(--oy,0) * 1.667%);transform:scaleX(var(--sx,1)) rotate(var(--rot,0rad)) scaleX(calc(1 / var(--sx,1)))}
-/* the gift the truck leaves behind: it stands where the trailer was; scrolling lifts the lid, light spills out and the drinks rise */
-.gift{position:absolute;left:50%;bottom:5.2vh;width:min(20vw,360px);aspect-ratio:796/415;margin-left:max(-10vw,-180px);transform-origin:50% 100%;opacity:0;will-change:transform}
-.gift>*{position:absolute}
-.g-back,.g-front{inset:0;width:100%;height:100%}
-.g-sh{left:-14%;right:-14%;bottom:3%;height:30%;border-radius:50%;background:radial-gradient(closest-side,rgba(4,14,40,.62),rgba(4,14,40,.26) 58%,transparent);filter:blur(7px)}
-.g-lid{left:-1.1%;top:-33%;width:102.2%;transform-origin:50% 80%;will-change:transform}
-.g-glow{left:5%;right:5%;top:1%;height:32%;border-radius:40% 40% 8% 8%;background:radial-gradient(ellipse at 50% 100%,rgba(255,214,150,.95),rgba(255,150,70,.45) 45%,transparent 72%);mix-blend-mode:screen;opacity:0}
-.g-beam{left:-6%;right:-6%;bottom:68%;height:190%;background:radial-gradient(ellipse 50% 100% at 50% 100%,rgba(255,220,170,.42),rgba(255,190,120,.12) 45%,transparent 70%);mix-blend-mode:screen;opacity:0;pointer-events:none}
-.g-items{left:4%;right:4%;top:-300%;bottom:3%;overflow:hidden}
-.g-items img{position:absolute;width:auto;transform-origin:50% 92%;margin-left:0;translate:-50% 0;will-change:transform;filter:drop-shadow(-5px 3px 6px rgba(30,0,0,.5))}
 .truck-snow{position:absolute;left:0;right:0;bottom:0;height:11vh;background:url(img/snow-bank.webp) 50% 0/cover}
 .menu a:nth-child(6){transition-delay:.2s}
 
@@ -273,8 +263,34 @@ main{position:relative;z-index:1;pointer-events:none}
   #walker,#walkin{width:230px;height:133px}
   .game-copy{top:92px}.game-copy p{font-size:14px}
   #stars{left:4vw;right:4vw;top:44vh;height:30vh}
-  .truckui h2{left:24px;top:18vh}.truck{width:118vw;bottom:10vh}.gift{width:44vw;margin-left:-22vw;bottom:6vh}
+  .truckui h2{left:24px;top:18vh}.truck{width:118vw;bottom:10vh}
   #greet{left:24px;width:86vw;height:calc(17vh + 86vw * .2336)}.fin-links{left:24px;right:24px;grid-template-columns:1fr;gap:0}.lk{padding:16px 2px}
   .ft-cols{grid-template-columns:1fr 1fr}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.thaw,.intro{display:none}.hero-copy h1 b{transform:none}}
+
+
+/* the drive game sits in the truck's old chapter, before the finale */
+.playui{inset:0;display:grid;place-items:end center;padding-bottom:12vh}
+.play-truck{position:absolute;left:50%;bottom:7vh;width:min(46vw,860px);transform:translateX(-50%);filter:drop-shadow(0 18px 30px rgba(0,10,30,.5))}
+.playui .btn{position:relative;z-index:1;margin-bottom:calc(min(46vw,860px) * 412 / 1292 + 4vh)}
+html.playing,html.playing body{overflow:hidden}
+.play{position:fixed;inset:0;z-index:200;background:#0a1530}
+.play canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#playhud{position:absolute;inset:0;pointer-events:none;color:#fff}
+#playhud button,#playhud .p-stick{pointer-events:auto}
+.p-top{position:absolute;top:22px;left:50%;transform:translateX(-50%);display:flex;gap:10px}
+.p-pill{display:inline-flex;align-items:center;height:42px;padding:0 20px;border-radius:21px;font-size:14px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;background:linear-gradient(180deg,rgba(255,96,102,.84),rgba(244,0,9,.74) 48%,rgba(206,0,8,.86));box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 10px 26px -14px rgba(0,0,0,.7)}
+.p-x{position:absolute;top:18px;right:20px;width:50px;height:50px;border:0;border-radius:50%;cursor:pointer;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);background:rgba(10,22,52,.42);box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+.p-x i{position:absolute;left:15px;top:24px;width:20px;height:2px;border-radius:2px;background:#fff;transform:rotate(45deg)}.p-x i+i{transform:rotate(-45deg)}
+.p-arrow{position:absolute;width:64px;height:64px}
+.p-arrow i{position:absolute;inset:14px;border-radius:50%;background:rgba(244,0,9,.85);box-shadow:0 0 22px rgba(255,40,40,.7)}
+.p-arrow i::after{content:'';position:absolute;right:-9px;top:50%;margin-top:-7px;border:7px solid transparent;border-left:10px solid #fff}
+.p-arrow b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:11px;font-weight:700;white-space:nowrap}
+.p-stick{position:absolute;left:28px;bottom:28px;width:120px;height:120px;border-radius:50%;display:none;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);background:rgba(10,22,52,.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);touch-action:none}
+.p-stick span{position:absolute;left:38px;top:38px;width:44px;height:44px;border-radius:50%;background:linear-gradient(180deg,#ff5a60,#d8000b)}
+@media (hover:none){.p-stick{display:block}}
+.p-fin{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:auto;animation:pop .7s var(--e)}
+.p-fin h2{font-size:clamp(36px,5vw,72px);line-height:1.05;margin-bottom:26px;text-shadow:0 6px 40px rgba(255,120,60,.45)}
+.p-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+@media (max-width:860px){.play-truck{width:88vw}.playui .btn{margin-bottom:calc(88vw * 412 / 1292 + 4vh)}}
