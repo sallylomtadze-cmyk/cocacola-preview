@@ -285,7 +285,7 @@
   const arm = () => { if (soundOn && wasTruck && snd.paused) snd.play().catch(() => { }); };
   ['pointerdown', 'keydown', 'touchend', 'wheel'].forEach(e => addEventListener(e, arm, { passive: true }));
   window.__site = { soundOn: () => soundOn };
-  $('#playbtn').addEventListener('click', () => { if (snd) snd.pause(); if (window.__play) return window.__play.open(); const sc = document.createElement('script'); sc.src = 'game.js?v=6'; document.body.appendChild(sc); });
+  $('#playbtn').addEventListener('click', () => { if (snd) snd.pause(); if (window.__play) return window.__play.open(); const sc = document.createElement('script'); sc.src = 'game.js?v=8'; document.body.appendChild(sc); });
   sbtn.addEventListener('click', () => { arm(); soundOn = !soundOn; sbtn.classList.toggle('on', soundOn); sbtn.setAttribute('aria-pressed', soundOn); });
 
   /* ---------- game: join seven stars into the Great Bear ---------- */

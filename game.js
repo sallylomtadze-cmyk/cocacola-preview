@@ -13,11 +13,17 @@
   const smokeTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); g.addColorStop(0, 'rgba(220,228,245,.55)'); g.addColorStop(1, 'rgba(220,228,245,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new T.CanvasTexture(c); })();
   const glow = (color, op) => new T.SpriteMaterial({ map: glowTex, color, transparent: true, opacity: op, blending: T.AdditiveBlending, depthWrite: false });
   // a photographic cut-out standing on the snow: its base sits on the ground, it always faces the camera
-  const mats = {}, users = {};
-  const fit = s => { const im = s.material.map.image; if (im && im.width) s.scale.set(s.userData.h * im.width / im.height, s.userData.h, 1); };
-  function prop(n, h, x, z, extra) {
-    if (!mats[n]) { users[n] = []; const t = TL.load('img/g/' + n + '.webp', () => users[n].forEach(fit)); t.encoding = T.sRGBEncoding; t.anisotropy = 4; mats[n] = new T.SpriteMaterial({ map: t, transparent: true, alphaTest: .04 }); }
-    const s = new T.Sprite(extra ? Object.assign(mats[n].clone(), extra) : mats[n]); s.center.set(.5, .02); s.userData.h = h; s.position.set(x, 0, z); s.scale.set(0, 0, 0); scene.add(s); users[n].push(s); fit(s); return s;
+  const mats = {}, users = {}, cards = [], CARD = new T.PlaneGeometry(1, 1).translate(0, .5, 0);
+  let snowMat = null; const moundGeo = new T.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+  const drift = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');   // soft heaped snow around a base, with a faint contact shade in the middle
+    let g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(236,242,255,.95)'); g.addColorStop(.45, 'rgba(226,234,252,.7)'); g.addColorStop(1, 'rgba(220,230,250,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+    g = x.createRadialGradient(64, 60, 0, 64, 60, 22); g.addColorStop(0, 'rgba(40,52,90,.32)'); g.addColorStop(1, 'rgba(40,52,90,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+    return new T.CanvasTexture(c); })();
+  const fit = s => { const im = s.material.map.image; if (!im || !im.width) return; const w = s.userData.h * im.width / im.height; s.scale.set(w, s.userData.h, 1);
+    if (s.userData.mound && !s.userData.m) { const m = new T.Mesh(moundGeo, snowMat); m.scale.set(w * 1.15, 1, w * .8); m.position.set(s.position.x, .1, s.position.z); m.renderOrder = -1; scene.add(m); s.userData.m = m; } };
+  function prop(n, h, x, z, extra, mound = true) {
+    if (!mats[n]) { users[n] = []; const t = TL.load('img/g/' + n + '.webp', () => users[n].forEach(fit)); t.encoding = T.sRGBEncoding; t.anisotropy = 4; mats[n] = new T.MeshBasicMaterial({ map: t, transparent: true, alphaTest: .04, side: T.DoubleSide }); }
+    const s = new T.Mesh(CARD, extra ? Object.assign(mats[n].clone(), extra) : mats[n]); s.userData.h = h; s.userData.mound = mound; s.position.set(x, 0, z); s.scale.set(0, 0, 0); scene.add(s); users[n].push(s); cards.push(s); fit(s); return s;
   }
 
   // ---------- sky: the site's own night plate wraps the horizon, stars and aurora above ----------
@@ -35,7 +41,7 @@
   { const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'); x.fillStyle = '#c3d0e8'; x.fillRect(0, 0, 256, 256);
     for (let i = 0; i < 2600; i++) { x.fillStyle = `rgba(${Math.random() < .5 ? '255,255,255' : '150,170,210'},${rnd(.04, .22)})`; x.beginPath(); x.arc(rnd(0, 256), rnd(0, 256), rnd(.5, 3), 0, 6.3); x.fill(); }
     const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(60, 60);
-    const g = new T.Mesh(new T.PlaneGeometry(700, 700, 80, 80), new T.MeshLambertMaterial({ map: t }));
+    const g = new T.Mesh(new T.PlaneGeometry(700, 700, 80, 80), new T.MeshLambertMaterial({ map: t })); snowMat = new T.MeshLambertMaterial({ map: drift, transparent: true, depthWrite: false });
     const p = g.geometry.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, (Math.sin(p.getX(i) * .06) + Math.cos(p.getY(i) * .045)) * .45); g.geometry.computeVertexNormals();
     g.rotation.x = -Math.PI / 2; scene.add(g); }
   const pts = []; for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2, r = 66 + Math.sin(a * 3) * 14 + Math.cos(a * 2) * 6; pts.push(new T.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r)); }
@@ -55,7 +61,9 @@
   const S0 = 0, ws = side(S0 + 18, -17); prop('workshop', 15, ws.x, ws.z); solid.push([ws.x, ws.z, 8]);                 // the trip starts at Santa's workshop
   { const p = side(300, 16); prop('stable', 12, p.x, p.z); solid.push([p.x, p.z, 7]); }
   prop('tree', 17, 0, -4); prop('santabear', 6.4, 0, 6); solid.push([0, 0, 9]);                                         // the square: the big tree, Santa and the bear
-  for (const k of [130, 410, 520]) { const p = side(k, k % 2 ? 9.5 : -9.5); prop('globe', 4.2, p.x, p.z); solid.push([p.x, p.z, 2.4]); }
+  const sparks = []; for (const k of [130, 410, 520]) { const p = side(k, k % 2 ? 14 : -14); prop('globe', 10, p.x, p.z); solid.push([p.x, p.z, 5]);
+    const gl = new T.Sprite(glow(0x9fd4ff, .5)); gl.position.set(p.x, 6, p.z); gl.scale.set(16, 16, 1); scene.add(gl);
+    for (let i = 0; i < 26; i++) { const s = new T.Sprite(glow(i % 3 ? 0xfff2cc : 0xbfe4ff, 0)); s.scale.set(.5, .5, 1); scene.add(s); sparks.push({ s, x: p.x, z: p.z, a: rnd(0, 6.28), r: rnd(3, 7), y: rnd(1, 11), v: rnd(.3, .9), ph: rnd(0, 6.28) }); } }
   const lamps = []; for (let i = 6; i < N; i += 26) { const p = side(i, (i / 26 | 0) % 2 ? 6.2 : -6.2); prop('lamp', 6.6, p.x, p.z); const g = new T.Sprite(glow(0xffc070, .65)); g.position.set(p.x, 6.1, p.z); g.scale.set(5, 5, 1); scene.add(g); lamps.push(g); }
   for (let i = 0; i < 30; i++) { const p = side(i * 20 + 11, (i % 2 ? 1 : -1) * rnd(12, 20)); if (Math.hypot(p.x, p.z) > 14) prop('tree', rnd(7, 11), p.x, p.z); }
   for (let tries = 0, n = 0; n < (PHONE ? 110 : 190) && tries < 4000; tries++) { const a = rnd(0, 6.283), r = rnd(18, 230), x = Math.cos(a) * r, z = Math.sin(a) * r;
@@ -77,11 +85,11 @@
   // the gondola line high over the valley
   const cable = [new T.Vector3(-260, 70, -150), new T.Vector3(260, 92, -40)];
   scene.add(new T.Line(new T.BufferGeometry().setFromPoints(cable), new T.LineBasicMaterial({ color: 0x1a2234 })));
-  const gondolas = [0, .33, .66].map(u => { const s = prop('gondola', 7, 0, 0); s.center.set(.5, .98); return { s, u }; });
+  const gondolas = [0, .33, .66].map(u => { const s = prop('gondola', 7, 0, 0, null, false); return { s, u }; });
 
   // ---------- the truck: the photographic rear view, its lights and the golden tracks it leaves ----------
   const truck = new T.Group(); scene.add(truck);
-  const rear = prop('truckrear', 5.4, 0, 0); scene.remove(rear); truck.add(rear);
+  const rear = prop('truckrear', 5.4, 0, 0, null, false); scene.remove(rear); cards.splice(cards.indexOf(rear), 1); truck.add(rear);
   const beam = new T.SpotLight(0xfff0d0, 3, 70, .5, .55, 1.1); beam.position.set(0, 1.6, 6); beam.target.position.set(0, 0, 24); truck.add(beam, beam.target);
   const warm = new T.PointLight(0xffa860, 1.4, 20, 2); warm.position.set(0, 5, -1); truck.add(warm);
   { const h = new T.Sprite(glow(0xffa860, .22)); h.scale.set(12, 8, 1); h.position.set(0, 3, 0); truck.add(h); }
@@ -110,6 +118,11 @@
   stick.addEventListener('pointermove', e => touch.on && move(e));
   const up = () => { touch.on = false; touch.x = touch.y = 0; knob.style.transform = ''; }; stick.addEventListener('pointerup', up); stick.addEventListener('pointercancel', up);
   function move(e) { const r = stick.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2), m = Math.min(1, Math.hypot(dx, dy) / 44), a = Math.atan2(dy, dx); touch.x = Math.cos(a) * m; touch.y = -Math.sin(a) * m; knob.style.transform = `translate(${Math.cos(a) * m * 34}px,${Math.sin(a) * m * 34}px)`; }
+  const view = { yaw: 0, pitch: .2, dist: 15, drag: null, idle: 0 };
+  cv.addEventListener('pointerdown', e => { view.drag = [e.clientX, e.clientY, e.pointerId]; view.idle = 0; try { cv.setPointerCapture(e.pointerId); } catch (_) { } });
+  cv.addEventListener('pointermove', e => { const d = view.drag; if (!d || d[2] !== e.pointerId) return; view.yaw -= (e.clientX - d[0]) * .0065; view.pitch = clamp(view.pitch + (e.clientY - d[1]) * .004, .04, 1.05); d[0] = e.clientX; d[1] = e.clientY; });
+  const endDrag = () => { view.drag = null; }; cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+  cv.addEventListener('wheel', e => { e.preventDefault(); view.dist = clamp(view.dist + e.deltaY * .02, 7, 34); }, { passive: false });
   const cnt = $('#pcnt'), arrow = $('#parrow'), fin = $('#pfin');
   const music = new Audio('audio/truck.mp3'); music.loop = true; music.volume = .7;
   const setCount = () => cnt.textContent = `${S.done} / ${NH}`;
@@ -131,7 +144,7 @@
     for (const [x, z, r] of solid) { const d = Math.hypot(nx - x, nz - z), rr = r + 2.2; if (d < rr) { nx = x + (nx - x) / d * rr; nz = z + (nz - z) / d * rr; S.v *= .7; } }
     { const d = Math.hypot(nx, nz); if (d > 200) { nx = nx / d * 200; nz = nz / d * 200; } }
     S.x = nx; S.z = nz;
-    truck.position.set(S.x, 0, S.z); truck.rotation.y = S.yaw; rear.material.rotation = S.steer * clamp(S.v / 20, 0, 1) * .025; rear.position.y = Math.abs(S.v) > 1 ? Math.sin(tt * 18) * .015 : 0;
+    truck.position.set(S.x, 0, S.z); truck.rotation.y = S.yaw; rear.rotation.z = -S.steer * clamp(S.v / 20, 0, 1) * .025; rear.rotation.y = Math.PI + 0; rear.position.y = Math.abs(S.v) > 1 ? Math.sin(tt * 18) * .015 : 0;
     // golden tracks on the snow behind the wheels, fading slowly
     if (Math.abs(S.v) > .5 && (!lastMark || Math.hypot(S.x - lastMark[0], S.z - lastMark[1]) > .55)) { lastMark = [S.x, S.z]; for (const sd of [-1.05, 1.05]) marks.push({ x: S.x + Math.cos(S.yaw) * sd - Math.sin(S.yaw) * 1.6, z: S.z - Math.sin(S.yaw) * sd - Math.cos(S.yaw) * 1.6, yaw: S.yaw, age: 0 }); while (marks.length > NT) marks.shift(); }
     for (let i = 0; i < marks.length; i++) { const m = marks[i]; m.age += dt; const k = Math.max(0, 1 - m.age / 9); e3.set(-Math.PI / 2, 0, m.yaw); q.setFromEuler(e3); m4.compose(tmp.set(m.x, .09, m.z), q, one); track.setMatrixAt(i, m4); const tw = .75 + .25 * Math.sin(tt * 9 + i * 1.3); track.setColorAt(i, col.setRGB(.95 * k * tw, .62 * k * tw, .22 * k * tw)); }
@@ -147,14 +160,18 @@
       if (k >= 1) { flying.splice(i, 1); scene.remove(f.g); f.o.L = .001; S.done++; setCount(); if (S.done === NH) S.end = .001; } }
     if (S.end > 0) { S.end = Math.min(1, S.end + dt / 2.5); if (S.end > .6 && fin.hidden) fin.hidden = false; }
     lamps.forEach((g, i) => g.material.opacity = .55 + Math.sin(tt * 2 + i) * .05);
-    gondolas.forEach(g => { g.u = (g.u + dt * .012) % 1; g.s.position.lerpVectors(cable[0], cable[1], g.u); });
+    gondolas.forEach(g => { g.u = (g.u + dt * .012) % 1; g.s.position.lerpVectors(cable[0], cable[1], g.u); g.s.position.y -= 7; });
+    sparks.forEach(p => { p.a += dt * .35; p.y += dt * p.v; if (p.y > 12) p.y = 1; p.s.position.set(p.x + Math.cos(p.a) * p.r, p.y, p.z + Math.sin(p.a) * p.r); p.s.material.opacity = Math.max(0, Math.sin(tt * 3 + p.ph)) * .9 * Math.sin(p.y / 12 * Math.PI); });
     // edge arrow toward the nearest dark house
     if (near) { tmp.copy(near.door).setY(2).project(cam); const behind = tmp.z > 1, ox = behind ? -tmp.x : tmp.x, oy = behind ? -tmp.y : tmp.y, inView = !behind && Math.abs(tmp.x) < .85 && Math.abs(tmp.y) < .8;
       arrow.hidden = inView; if (!inView) { const a = Math.atan2(-oy, ox); arrow.style.left = (50 + Math.cos(a) * 36) + '%'; arrow.style.top = (50 + Math.sin(a) * 40) + '%'; arrow.style.transform = `translate(-50%,-50%) rotate(${a}rad)`; }
       $('#pdist').textContent = Math.round(nd) + ' მ'; } else arrow.hidden = true;
     // chase camera
-    camPos.set(S.x - Math.sin(S.yaw) * 15, 5.6 + S.v * .04, S.z - Math.cos(S.yaw) * 15); cam.position.lerp(camPos, 1 - Math.pow(.02, dt));
-    camLook.set(S.x + Math.sin(S.yaw) * 8, 2.6, S.z + Math.cos(S.yaw) * 8); cam.lookAt(camLook);
+    if (!view.drag && Math.abs(S.v) > 2) { view.yaw *= Math.pow(.25, dt); view.pitch += (.2 - view.pitch) * Math.min(1, dt * 1.5); }
+    { const a = S.yaw + view.yaw, hd = view.dist * Math.cos(view.pitch); camPos.set(S.x - Math.sin(a) * hd, 2.4 + view.dist * Math.sin(view.pitch) + S.v * .03, S.z - Math.cos(a) * hd); }
+    cam.position.lerp(camPos, view.drag ? 1 : 1 - Math.pow(.02, dt)); camLook.set(S.x + Math.sin(S.yaw) * 3, 2.6, S.z + Math.cos(S.yaw) * 3); cam.lookAt(camLook);
+    for (const c of cards) c.rotation.y = Math.atan2(cam.position.x - c.position.x, cam.position.z - c.position.z);
+    rear.rotation.y = Math.atan2(cam.position.x - S.x, cam.position.z - S.z) - S.yaw;
     const p = snow.geometry.attributes.position; for (let i = 0; i < NS; i++) { let y = p.getY(i) - dt * (2.2 + (i % 5) * .3); if (y < 0) y += 40; p.setY(i, y); p.setX(i, p.getX(i) + Math.sin(tt + i) * .004); } p.needsUpdate = true; snow.position.set(S.x, 0, S.z);
     R.render(scene, cam); requestAnimationFrame(loop);
   }
