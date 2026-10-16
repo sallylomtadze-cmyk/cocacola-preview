@@ -28,7 +28,7 @@
   }
   function xprop(n, h, x, z) { // three crossed cards: reads as a full tree from every side
     prop(n, 0, 0, 0); const m = users[n].pop(); cards.splice(cards.indexOf(m), 1); scene.remove(m);
-    const G = new T.Group(); for (let i = 0; i < 3; i++) { const c = new T.Mesh(CARD, mats[n]); c.rotation.y = i * Math.PI / 3; G.add(c); }
+    const G = new T.Group(); for (let i = 0; i < 4; i++) { const c = new T.Mesh(CARD, mats[n]); c.rotation.y = i * Math.PI / 4; G.add(c); }
     G.userData = { h, x: 1, mat: mats[n], mound: true }; G.position.set(x, 0, z); G.rotation.y = rnd(0, 3); G.scale.set(0, 0, 0); scene.add(G); users[n].push(G); fit(G); return G;
   }
   const planks = (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 256; const x = c.getContext('2d'); x.fillStyle = '#b9b0a8'; x.fillRect(0, 0, 256, 256);
@@ -152,34 +152,12 @@
     if (roadDist(x, z) < 11 || Math.hypot(x - ws.x, z - ws.z) < 14 || Math.hypot(x, z) < 16) continue; firs.push([x, z, rnd(7, 13), 0]); n++; }
 
   let glintMat = null;
-  function forest() { // real 3D firs: drooping tiers of snowy branches (one instanced mesh per tier for the whole forest), trunks, and lights + baubles on the decorated ones
-    const ok = firs.filter(([x, z, h, d]) => (d && x === 0 && z === -6) || (!occ.some(([ox, oz, r]) => Math.hypot(x - ox, z - oz) < r) && roadDist(x, z) > 9));
-    // each fir is built from real branches: whorls of photographed snowy branch cards (a flat and an upright card per branch) around a dark core
-    const bt = new T.TextureLoader().load('img/t/branch-g.png'); bt.encoding = T.sRGBEncoding; bt.anisotropy = 8;
-    const bm = new T.MeshLambertMaterial({ map: bt, alphaTest: .22, side: T.DoubleSide, color: 0xffffff, emissive: 0x020504 }), m4 = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler(0, 0, 0, 'YZX'), s3 = new T.Vector3(), p3 = new T.Vector3();
-    const plan = []; ok.forEach(([x, z, h]) => { const W = Math.round(h * 1.5) + 8; for (let w = 0; w < W; w++) { const t = w / W, y = h * (.07 + t * .88), L = h * .47 * Math.pow(1 - t, .85) * (1 + .12 * Math.sin(t * 9)) + h * .035, n = Math.max(6, Math.round(14 - t * 8)), off = rnd(0, 6.28);
-      for (let k = 0; k < n; k++) { const a = off + k / n * 6.283 + rnd(-.2, .2), d = .18 + t * .22 + rnd(-.05, .05), s = L * rnd(.85, 1.1); plan.push([x, y, z, a, d, s, -Math.PI / 2 + rnd(-.25, .25)]); plan.push([x, y, z, a, d, s * .92, rnd(-.3, .3)]); } } });
-    const br = new T.InstancedMesh(new T.PlaneGeometry(1, .62).translate(.5, 0, 0), bm, plan.length);
-    plan.forEach(([x, y, z, a, d, s, roll], n) => { e.set(roll, -a, -d); q.setFromEuler(e); m4.compose(p3.set(x, y, z), q, s3.set(s, s, s)); br.setMatrixAt(n, m4); }); scene.add(br);
-    const core = new T.InstancedMesh(new T.ConeGeometry(1, 1, 10).translate(0, .5, 0), new T.MeshLambertMaterial({ color: 0x14281c }), ok.length);
-    ok.forEach(([x, z, h], n) => { m4.makeScale(h * .2, h * .9, h * .2).setPosition(x, h * .05, z); core.setMatrixAt(n, m4); }); scene.add(core);
-    const trunk = new T.InstancedMesh(new T.CylinderGeometry(.018, .028, .2, 6).translate(0, .1, 0), new T.MeshLambertMaterial({ color: 0x3a2618 }), ok.length);
-    ok.forEach(([x, z, h], n) => { m4.makeScale(h, h, h).setPosition(x, 0, z); trunk.setMatrixAt(n, m4); }); scene.add(trunk);
-    const dec = ok.filter(f => f[3]), NB = 120, NBA = 26, bulbs = new T.InstancedMesh(new T.SphereGeometry(1, 6, 4), new T.MeshBasicMaterial({ color: 0xffd98a }), dec.length * NB),
-      balls = new T.InstancedMesh(new T.SphereGeometry(1, 12, 8), new T.MeshPhongMaterial({ color: 0xb3000c, shininess: 110, specular: 0xffffff, emissive: 0x200000 }), dec.length * NBA); let b = 0, c = 0;
-    dec.forEach(([x, z, h]) => { for (let k = 0; k < NB + NBA; k++) { const t = Math.random(), y = .12 + t * .82, r = (.47 * Math.pow(1 - (y - .07) / .88, .85) + .035) * rnd(.6, .85), a = rnd(0, 6.28), s = k < NB ? h * .007 : h * .018;
-        m4.makeScale(s, s, s).setPosition(x + Math.cos(a) * r * h, y * h, z + Math.sin(a) * r * h); if (k < NB) bulbs.setMatrixAt(b++, m4); else balls.setMatrixAt(c++, m4); }
-      const st = new T.Sprite(glow(0xffe3a0, .9)); st.position.set(x, h * .97, z); st.scale.set(h * .12, h * .12, 1); scene.add(st); });
-    scene.add(bulbs, balls);
-    { const P = []; ok.forEach(([x, z, h]) => { for (let k = 0; k < 26; k++) { const y = rnd(.1, .9), r = (.47 * Math.pow(1 - (y - .07) / .88, .85) + .035) * rnd(.7, 1), a = rnd(0, 6.28); P.push(x + Math.cos(a) * r * h, y * h, z + Math.sin(a) * r * h, rnd(0, 6.28)); } });
-      const gg = new T.BufferGeometry(), arr = new Float32Array(P), pos = new Float32Array(P.length / 4 * 3), ph = new Float32Array(P.length / 4);
-      for (let i = 0; i < ph.length; i++) { pos[i * 3] = arr[i * 4]; pos[i * 3 + 1] = arr[i * 4 + 1]; pos[i * 3 + 2] = arr[i * 4 + 2]; ph[i] = arr[i * 4 + 3]; }
-      gg.setAttribute('position', new T.BufferAttribute(pos, 3)); gg.setAttribute('ph', new T.BufferAttribute(ph, 1));
-      glintMat = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { t: { value: 0 } },
-        vertexShader: 'attribute float ph; uniform float t; varying float a; void main(){ vec4 mv = modelViewMatrix * vec4(position,1.); a = pow(max(0., sin(t * 1.6 + ph * 7.)), 12.); gl_PointSize = (2. + 40. * a) * 18. / -mv.z; gl_Position = projectionMatrix * mv; }',
-        fragmentShader: 'varying float a; void main(){ vec2 d = gl_PointCoord - .5; float r = length(d), s = max(0., 1. - r * 2.) + max(0., .06 - abs(d.x)) * 6. * (1. - r * 2.) + max(0., .06 - abs(d.y)) * 6. * (1. - r * 2.); gl_FragColor = vec4(vec3(1., .95, .85) * s * a, s * a); }' });
-      scene.add(new T.Points(gg, glintMat)); }
-    ok.forEach(([x, z, h]) => { const m = new T.Mesh(moundGeo, snowMat); m.scale.set(h * .7, 1, h * .7); m.position.set(x, .08, z); scene.add(m); }); }
+  function forest() { // the photographed trees the visitor liked, as crossed cards, spaced like a real forest (no clumps)
+    const ok = [];
+    for (const f of firs) { const [x, z, h, d] = f, sq = d && x === 0 && z === -6;
+      if (!sq && (occ.some(([ox, oz, r]) => Math.hypot(x - ox, z - oz) < r) || roadDist(x, z) < 9)) continue;
+      if (ok.some(([x2, z2, h2]) => Math.hypot(x - x2, z - z2) < (h + h2) * .42)) continue; ok.push(f); }
+    ok.forEach(([x, z, h, d]) => xprop(d ? 'tree' : 'spruce', h, x, z)); }
   // houses: a paper-cup cottage or a gift-box cottage, dark until their gift arrives
   const houses = [], NH = 8;
   for (let k = 0; k < NH; k++) {
@@ -194,7 +172,6 @@
     const smoke = []; for (let s = 0; s < 6; s++) { const m = new T.Sprite(new T.SpriteMaterial({ map: smokeTex, transparent: true, opacity: 0, depthWrite: false })); scene.add(m); smoke.push({ m, t: s / 6 }); }
     occ.push([p.x, p.z, 10]); houses.push({ litM, gl, bea, ring, col, smoke, p, h, door, L: 0, done: false }); solid.push([p.x, p.z, 5.2]);
   }
-
   forest();
   // the gondola line high over the valley
   const cable = [new T.Vector3(-260, 70, -150), new T.Vector3(260, 92, -40)];
