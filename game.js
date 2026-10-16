@@ -23,7 +23,7 @@
     if (s.userData.x) s.scale.set(w, s.userData.h, w); else s.scale.set(w, s.userData.h, 1); if (s.userData.onfit && !s.userData.built) { s.userData.built = 1; s.userData.onfit(w, s.userData.h, im); }
     if (s.userData.mound && !s.userData.m) { const m = new T.Mesh(moundGeo, snowMat); m.scale.set(w * 1.15, 1, w * .8); m.position.set(s.position.x, .1, s.position.z); m.renderOrder = -1; scene.add(m); s.userData.m = m; } };
   function prop(n, h, x, z, extra, mound = true) {
-    if (!mats[n]) { users[n] = []; const t = TL.load('img/g/' + n + '.webp', () => users[n].forEach(fit)); t.encoding = T.sRGBEncoding; t.anisotropy = 4; mats[n] = new T.MeshBasicMaterial({ map: t, transparent: true, alphaTest: .04, side: T.DoubleSide }); }
+    if (!mats[n]) { users[n] = []; const t = TL.load('img/g/' + n + '.webp?v=2', () => users[n].forEach(fit)); t.encoding = T.sRGBEncoding; t.anisotropy = 4; mats[n] = new T.MeshBasicMaterial({ map: t, transparent: true, alphaTest: .04, side: T.DoubleSide }); }
     const s = new T.Mesh(CARD, extra ? Object.assign(mats[n].clone(), extra) : mats[n]); s.userData.h = h; s.userData.mound = mound; s.position.set(x, 0, z); s.scale.set(0, 0, 0); scene.add(s); users[n].push(s); cards.push(s); fit(s); return s;
   }
   function xprop(n, h, x, z) { // three crossed cards: reads as a full tree from every side
@@ -39,14 +39,44 @@
     for (let i = 0; i < 500; i++) { const r = rnd(4, 18), gx = rnd(0, 256), gy = rnd(0, 256), gr = x.createRadialGradient(gx, gy - r * .3, 0, gx, gy, r); gr.addColorStop(0, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(150,170,215,.18)'); x.fillStyle = gr; x.beginPath(); x.arc(gx, gy, r, 0, 6.3); x.fill(); }
     const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(1.5, 1.5); return t; })();
   const wallM = c => new T.MeshLambertMaterial({ map: planks, color: c }), roofM = () => new T.MeshLambertMaterial({ map: lumpy, color: 0xf2f6ff });
-  function building(n, h, x, z, face, bx, wf, wo, wt, ap, wc, roofW = 1.15) { // the photo is the facade; walls and a snowy gable roof give it a real body
-    const s = prop(n, h, x, z); cards.splice(cards.indexOf(s), 1); s.rotation.y = face;
-    s.userData.onfit = (W, H) => { const G = new T.Group(); G.position.copy(s.position); G.rotation.y = face; scene.add(G);
-      const bw = W * wf, d = bw * .62, wtop = H * wt, ox = W * wo;
-      const body = new T.Mesh(new T.BoxGeometry(bw, wtop, d), wallM(wc)); body.position.set(ox, wtop / 2, -d / 2 - .04); G.add(body);
-      const sh = new T.Shape(); sh.moveTo(-bw * roofW / 2, 0); sh.lineTo(bw * roofW / 2, 0); sh.lineTo(0, H * ap - wtop); sh.lineTo(-bw * roofW / 2, 0);
-      const roof = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: d * 1.08, bevelEnabled: false }), roofM()); roof.position.set(ox, wtop - .05, -d * 1.08 - .02); G.add(roof); };
-    return s; }
+
+
+  const TXc = {}, TX = (n, rx = 1, ry = 1) => { const k = n + rx + ry; if (TXc[k]) return TXc[k]; const t = TL.load('img/t/' + n + '.jpg'); t.encoding = T.sRGBEncoding; t.anisotropy = 8; if (rx !== 1 || ry !== 1) { t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(rx, ry); } return TXc[k] = t; };
+  const wall = (n, list, on = 0) => { const m = new T.MeshLambertMaterial({ map: TX(n), emissiveMap: TX(n + '-e'), emissive: new T.Color().setScalar(on) }); if (list) list.push(m); return m; };
+  const snowM = () => new T.MeshLambertMaterial({ map: TX('snow', 1.5, 1.5), color: 0xffffff });
+  const iceGeo = new T.ConeGeometry(.07, .55, 5).rotateX(Math.PI), iceM = new T.MeshPhongMaterial({ color: 0xdfefff, transparent: true, opacity: .8, shininess: 120, specular: 0xffffff });
+  const bulbGeo = new T.SphereGeometry(.07, 6, 4), bulbM = new T.MeshBasicMaterial({ color: 0xffd28a });
+  function eaves(G, x0, x1, y, z) { // icicles and a string of warm bulbs along an eave
+    const n = Math.round((x1 - x0) / .32), ice = new T.InstancedMesh(iceGeo, iceM, n), bulbs = new T.InstancedMesh(bulbGeo, bulbM, n), m = new T.Matrix4();
+    for (let i = 0; i < n; i++) { const x = x0 + (i + .5) * (x1 - x0) / n, s = rnd(.5, 1.4); m.makeScale(1, s, 1).setPosition(x, y - .28 * s, z); ice.setMatrixAt(i, m); m.makeTranslation(x, y - .12 - Math.sin(i * .9) * .08, z + .06); bulbs.setMatrixAt(i, m); }
+    G.add(ice, bulbs); }
+  function cottage(x, z, face, front, side, list, on, W = 7.6, H = 4.8, D = 6.6) { // a real cottage: textured walls, snowy gable roof, chimney, icicles, fairy lights, steps
+    const G = new T.Group(); G.position.set(x, 0, z); G.rotation.y = face; scene.add(G);
+    const sm = wall(side, list, on), fm = wall(front, list, on);
+    const body = new T.Mesh(new T.BoxGeometry(W, H, D), [sm, sm, snowM(), sm, fm, sm]); body.position.y = H / 2; G.add(body);
+    const rh = 3.1, ow = W / 2 + .55, slope = Math.hypot(ow, rh), ang = Math.atan2(rh, ow);
+    for (const s of [-1, 1]) { const p = new T.Mesh(new T.BoxGeometry(slope, .42, D + 1.1), snowM()); p.position.set(s * ow / 2, H + rh / 2, 0); p.rotation.z = -s * ang; G.add(p); }
+    const tri = new T.Shape(); tri.moveTo(-W / 2, 0); tri.lineTo(W / 2, 0); tri.lineTo(0, rh * W / 2 / ow); tri.lineTo(-W / 2, 0);
+    const gm = new T.MeshLambertMaterial({ map: TX(side) }); for (const s of [-1, 1]) { const t = new T.Mesh(new T.ShapeGeometry(tri), gm); t.position.set(0, H, s * D / 2); if (s < 0) t.rotation.y = Math.PI; G.add(t); }
+    const ch = new T.Mesh(new T.BoxGeometry(.9, 2.2, .9), new T.MeshLambertMaterial({ color: 0x6b2a20 })); ch.position.set(W * .24, H + rh * .75, -D * .15); G.add(ch);
+    const cs = new T.Mesh(new T.BoxGeometry(1.1, .3, 1.1), snowM()); cs.position.set(W * .24, H + rh * .75 + 1.15, -D * .15); G.add(cs);
+    eaves(G, -ow, ow, H + .02, D / 2 + .5); eaves(G, -ow, ow, H + .02, -D / 2 - .5);
+    for (let i = 0; i < 3; i++) { const st = new T.Mesh(new T.BoxGeometry(2.2 - i * .3, .22, .55), snowM()); st.position.set(0, .11 + i * .22, D / 2 + 1.1 - i * .5); G.add(st); }
+    const mnd = new T.Mesh(moundGeo, snowMat); mnd.scale.set(W * 1.8, 1, D * 1.8); mnd.position.y = .1; G.add(mnd);
+    return { G, chimney: new T.Vector3(W * .24, H + rh * .75 + 1.3, -D * .15), W, D };
+  }
+  function cupCottage(x, z, face, list) { // a real paper cup: tapered cylinder wrapped all round, white rims, a heap of snow on the lid
+    const G = new T.Group(); G.position.set(x, 0, z); G.rotation.y = face; scene.add(G); const rT = 3.3, rB = 2.8, h = 7.6;
+    const m = wall('cup', list); m.map.offset.x = m.emissiveMap.offset.x = .25; m.map.wrapS = m.emissiveMap.wrapS = T.RepeatWrapping;
+    const c = new T.Mesh(new T.CylinderGeometry(rT, rB, h, 64, 1, true), m); c.position.y = h / 2; G.add(c);
+    const white = new T.MeshLambertMaterial({ color: 0xf3f1ec });
+    const top = new T.Mesh(new T.TorusGeometry(rT, .2, 12, 64), white); top.rotation.x = Math.PI / 2; top.position.y = h; G.add(top);
+    const band = new T.Mesh(new T.CylinderGeometry(rB + .02, rB - .02, .5, 64, 1, true), white); band.position.y = .25; G.add(band);
+    const cap = new T.Mesh(new T.SphereGeometry(rT * 1.08, 40, 14, 0, Math.PI * 2, 0, Math.PI / 2), snowM()); cap.scale.y = .5; cap.position.y = h; G.add(cap);
+    for (let i = 0; i < 3; i++) { const st = new T.Mesh(new T.BoxGeometry(2 - i * .3, .22, .5), snowM()); st.position.set(0, .11 + i * .22, rB + .9 - i * .45); G.add(st); }
+    const mnd = new T.Mesh(moundGeo, snowMat); mnd.scale.set(14, 1, 12); mnd.position.y = .1; G.add(mnd);
+    return { G, chimney: new T.Vector3(0, h + 1.2, 0), W: rT * 2, D: rT * 2 };
+  }
 
   // ---------- sky: the site's own night plate wraps the horizon, stars and aurora above ----------
   { const t = TL.load('img/bg-night.jpg'); t.encoding = T.sRGBEncoding; t.wrapS = T.MirroredRepeatWrapping; t.repeat.set(4, .62); t.offset.set(0, .38);
@@ -63,7 +93,7 @@
   { const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'); x.fillStyle = '#c3d0e8'; x.fillRect(0, 0, 256, 256);
     for (let i = 0; i < 2600; i++) { x.fillStyle = `rgba(${Math.random() < .5 ? '255,255,255' : '150,170,210'},${rnd(.04, .22)})`; x.beginPath(); x.arc(rnd(0, 256), rnd(0, 256), rnd(.5, 3), 0, 6.3); x.fill(); }
     const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(60, 60); snowTex = t.clone(); snowTex.repeat.set(2, 2); snowTex.needsUpdate = true;
-    const g = new T.Mesh(new T.PlaneGeometry(700, 700, 80, 80), new T.MeshLambertMaterial({ map: t })); snowMat = new T.MeshLambertMaterial({ map: drift, transparent: true, depthWrite: false });
+    const g = new T.Mesh(new T.PlaneGeometry(700, 700, 80, 80), new T.MeshLambertMaterial({ map: TX('snow', 34, 34), color: 0xe9eef9 })); snowMat = new T.MeshLambertMaterial({ map: drift, transparent: true, depthWrite: false });
     const p = g.geometry.attributes.position; for (let i = 0; i < p.count; i++) p.setZ(i, (Math.sin(p.getX(i) * .06) + Math.cos(p.getY(i) * .045)) * .45); g.geometry.computeVertexNormals();
     g.rotation.x = -Math.PI / 2; scene.add(g); }
   const pts = []; for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2, r = 66 + Math.sin(a * 3) * 14 + Math.cos(a * 2) * 6; pts.push(new T.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r)); }
@@ -80,8 +110,8 @@
   const solid = []; // circles the truck cannot drive through
 
   // ---------- places ----------
-  const S0 = 0, ws = side(S0 + 18, -17), faceRoad = (p, i) => Math.atan2(RS[i].x - p.x, RS[i].z - p.z); building('workshop', 15, ws.x, ws.z, faceRoad(ws, S0 + 18), 0, .65, 0, .63, .96, 0x8a5a36); solid.push([ws.x, ws.z, 8]);                 // the trip starts at Santa's workshop
-  { const p = side(300, 16); building('stable', 12, p.x, p.z, faceRoad(p, 300), 0, .56, -.09, .65, .9, 0xa0261c, 1.4); solid.push([p.x, p.z, 7]); }
+  const S0 = 0, ws = side(S0 + 18, -17), faceRoad = (p, i) => Math.atan2(RS[i].x - p.x, RS[i].z - p.z); cottage(ws.x, ws.z, faceRoad(ws, S0 + 18), 'workshop-front', 'cottage-side', null, 1, 10, 6.4, 8).G.children[0].material[0].color.set(0x8a6a50); solid.push([ws.x, ws.z, 8]);                 // the trip starts at Santa's workshop
+  { const p = side(300, 16); cottage(p.x, p.z, faceRoad(p, 300), 'cottage-front', 'cottage-side', null, 1, 8.5, 5, 7); solid.push([p.x, p.z, 7]); }
   xprop('tree', 17, 0, -4); prop('santabear', 6.4, 0, 6); solid.push([0, 0, 9]);                                         // the square: the big tree, Santa and the bear
   // real snow globes: a glass sphere with a fresnel rim and moving highlights, the bear and a little fir inside, snow swirling in the water, a red lacquer and gold base
   const sparks = [], globes = [];
@@ -114,33 +144,13 @@
   for (let tries = 0, n = 0; n < (PHONE ? 110 : 190) && tries < 4000; tries++) { const a = rnd(0, 6.283), r = rnd(18, 230), x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (roadDist(x, z) < 11 || Math.hypot(x - ws.x, z - ws.z) < 14 || Math.hypot(x, z) < 16) continue; xprop('spruce', rnd(8, 16), x, z); n++; }
 
-  function crop(im, x0, y0, x1, y1, w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(im, x0 * im.width, y0 * im.height, (x1 - x0) * im.width, (y1 - y0) * im.height, 0, 0, w, h); const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; return t; }
-  const paper = (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 256; const x = c.getContext('2d'); x.fillStyle = '#8f1814'; x.fillRect(0, 0, 256, 256);
-    for (let i = 0; i < 1800; i++) { x.fillStyle = `rgba(${Math.random() < .5 ? '0,0,0' : '255,120,110'},${rnd(.02, .06)})`; x.fillRect(rnd(0, 256), 0, 1, 256); }
-    x.fillStyle = 'rgba(255,255,255,.75)'; x.font = '28px serif'; x.fillText('\u2744', 40, 80); x.fillText('\u2744', 170, 190); const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(2, 2); t.encoding = T.sRGBEncoding; return t; })();
-  function cupHouse(x, z, h, face, litM) { // a real paper cup: tapered cylinder, the photo wraps its front, snow heaped on the lid
-    const G = new T.Group(); G.position.set(x, 0, z); G.rotation.y = face; scene.add(G);
-    const done = (dark, lit) => { const W = h * dark.width / dark.height, top = h * (1 - 173 / 836), rT = W * .364, rB = W * .315, A = 2.5;
-      const cyl = (t0, tl, mat, dr = 0) => { const m = new T.Mesh(new T.CylinderGeometry(rT + dr, rB + dr, top, 48, 1, true, t0, tl), mat); m.position.y = top / 2; G.add(m); return m; };
-      cyl(-A / 2, A, new T.MeshBasicMaterial({ map: crop(dark, 73 / 529, 173 / 836, 458 / 529, 1, 512, 640), side: T.FrontSide }));
-      const lm = new T.MeshBasicMaterial({ map: crop(lit, 73 / 529, 173 / 836, 458 / 529, 1, 512, 640), transparent: true, opacity: 0, depthWrite: false }); cyl(-A / 2, A, lm, .01); litM.push(lm);
-      cyl(A / 2, Math.PI * 2 - A, new T.MeshLambertMaterial({ map: paper }));
-      const rim = new T.Mesh(new T.TorusGeometry(rT, rT * .06, 10, 48), new T.MeshLambertMaterial({ color: 0xf2f2f2 })); rim.rotation.x = Math.PI / 2; rim.position.y = top; G.add(rim);
-      const cap = new T.Mesh(new T.SphereGeometry(rT * 1.06, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), roofM()); cap.scale.y = .42; cap.position.y = top; G.add(cap);
-      const stepH = h * .3, stepW = W, steps = (img, op) => { const m = new T.MeshBasicMaterial({ map: crop(img, 0, .7, 1, 1, 512, 160), transparent: true, alphaTest: .05, opacity: op }); const p = new T.Mesh(CARD, m); p.scale.set(stepW, stepH, 1); p.position.z = rB + .05; G.add(p); return m; };
-      steps(dark, 1); const sl = steps(lit, 0); sl.alphaTest = 0; sl.depthWrite = false; litM.push(sl);
-      const mnd = new T.Mesh(moundGeo, snowMat); mnd.scale.set(W * 1.3, 1, W * 1.1); mnd.position.y = .1; G.add(mnd); };
-    let d0 = null, l0 = null; const go = () => d0 && l0 && done(d0, l0);
-    new T.ImageLoader().load('img/g/cuphouse-d.webp', im => { d0 = im; go(); }); new T.ImageLoader().load('img/g/cuphouse.webp', im => { l0 = im; go(); });
-    return null; }
   // houses: a paper-cup cottage or a gift-box cottage, dark until their gift arrives
   const houses = [], NH = 8;
   for (let k = 0; k < NH; k++) {
     const i = Math.floor((k + .5) / NH * N) % N, d = k % 2 ? 1 : -1, p = side(i, 13 * d), n = k % 2 ? 'cuphouse' : 'boxhouse', h = n === 'cuphouse' ? 9 : 9.5;
     const fr = faceRoad(p, i), litM = [];
     let lit;
-    if (n === 'boxhouse') { building('boxhouse-d', h, p.x, p.z, fr, 0, .6, -.06, .6, .95, 0xa0261c); lit = prop(n, h, p.x, p.z, { opacity: 0 }); cards.splice(cards.indexOf(lit), 1); lit.rotation.y = fr; lit.position.add(new T.Vector3(Math.sin(fr) * .03, 0, Math.cos(fr) * .03)); litM.push(lit.material); }
-    else lit = cupHouse(p.x, p.z, h, fr, litM);
+    const H3 = n === 'boxhouse' ? cottage(p.x, p.z, fr, 'cottage-front', 'cottage-side', litM, 0) : cupCottage(p.x, p.z, fr, litM);
     const gl = new T.Sprite(glow(0xffb066, 0)); gl.position.set(p.x, h * .35, p.z); gl.scale.set(h * 1.6, h * 1.1, 1); scene.add(gl);
     const door = side(i, 6.5 * d), bea = new T.Group(); bea.position.set(door.x, 0, door.z); scene.add(bea);
     const col = new T.Mesh(new T.CylinderGeometry(1, 1, 30, 24, 1, true), new T.MeshBasicMaterial({ color: 0xff2a2a, transparent: true, opacity: .14, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide })); col.position.y = 15; bea.add(col);
@@ -198,7 +208,7 @@
   function close() { S.on = false; root.hidden = true; document.documentElement.classList.remove('playing'); music.pause(); window.__playing = false; if (document.fullscreenElement) document.exitFullscreen().catch(() => { }); }
   function restart() { houses.forEach(o => { o.done = false; o.L = 0; o.bea.visible = true; }); S.done = 0; S.end = 0; fin.hidden = true; setCount(); }
   $('#pclose').addEventListener('click', close); $('#pagain').addEventListener('click', restart); $('#pexit').addEventListener('click', close);
-  let lw = 0, lh = 0; function size() { const w = cv.clientWidth || innerWidth, h = cv.clientHeight || innerHeight; lw = w; lh = h; R.setPixelRatio(Math.min(PHONE ? 1.5 : 2, devicePixelRatio || 1)); R.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }
+  let lw = 0, lh = 0; function size() { const w = cv.clientWidth || innerWidth, h = cv.clientHeight || innerHeight; lw = w; lh = h; R.setPixelRatio(Math.min(PHONE ? 1.5 : 2, devicePixelRatio || 1)); R.setSize(w, h, false); if (comp) comp.setSize(w, h); cam.aspect = w / h; cam.updateProjectionMatrix(); }
 
   // ---------- the loop ----------
   let last = 0, tt = 0; const camPos = new T.Vector3(), camLook = new T.Vector3();
@@ -222,7 +232,7 @@
     for (const o of houses) { const d = Math.hypot(o.door.x - S.x, o.door.z - S.z); if (!o.done) { if (d < nd) { nd = d; near = o; } if (d < 7.5) { o.done = true; o.bea.visible = false; gift(o); } }
       o.ring.rotation.z += dt * .8; o.col.material.opacity = .11 + Math.sin(tt * 2.4) * .04;
       if (o.L > 0 && o.L < 1) o.L = Math.min(1, o.L + dt / 1.6);
-      o.litM.forEach(m => m.opacity = o.L); o.gl.material.opacity = o.L * (.5 + Math.sin(tt * 6 + o.p.x) * .03);
+      o.litM.forEach(m => m.emissive.setScalar(o.L * 1.15)); o.gl.material.opacity = o.L * (.5 + Math.sin(tt * 6 + o.p.x) * .03);
       o.smoke.forEach(s => { s.t = (s.t + dt * .14) % 1; s.m.position.set(o.p.x + Math.sin(s.t * 6 + o.p.z) * .5, o.h * .95 + s.t * 7, o.p.z); const k = 1.2 + s.t * 3.5; s.m.scale.set(k, k, 1); s.m.material.opacity = o.L * .45 * Math.sin(s.t * Math.PI); }); }
     for (let i = flying.length - 1; i >= 0; i--) { const f = flying[i]; f.t += dt / .9; const k = Math.min(1, f.t); f.g.position.lerpVectors(f.a, f.b, k); f.g.position.y += Math.sin(k * Math.PI) * 6; f.g.rotation.y += dt * 5;
       if (k >= 1) { flying.splice(i, 1); scene.remove(f.g); f.o.L = .001; S.done++; setCount(); if (S.done === NH) S.end = .001; } }
@@ -247,8 +257,12 @@
     rear.rotation.y = Math.atan2(cam.position.x - S.x, cam.position.z - S.z) - S.yaw;
     const p = snow.geometry.attributes.position; for (let i = 0; i < NS; i++) { let y = p.getY(i) - dt * (2.2 + (i % 5) * .3); if (y < 0) y += 40; p.setY(i, y); p.setX(i, p.getX(i) + Math.sin(tt + i) * .004); } p.needsUpdate = true; snow.position.set(S.x, 0, S.z);
     for (const m of motes) { m.y += dt * m.v; if (m.y > 15) m.y = .5; const x = S.x + m.x + Math.sin(tt * .4 + m.ph) * 2, z = S.z + m.z + Math.cos(tt * .3 + m.ph) * 2; m.s.position.set(x, m.y, z); m.s.material.opacity = (Math.sin(tt * 1.7 + m.ph) * .5 + .5) * .7; }
-    R.render(scene, cam); requestAnimationFrame(loop);
+    if (comp) comp.render(); else R.render(scene, cam); requestAnimationFrame(loop);
   }
+  let comp = null;
+  const add = s => new Promise((ok, no) => { const e = document.createElement('script'); e.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/' + s; e.onload = ok; e.onerror = no; document.head.appendChild(e); });
+  (async () => { try { for (const s of ['shaders/CopyShader.js', 'shaders/LuminosityHighPassShader.js', 'shaders/GammaCorrectionShader.js', 'postprocessing/EffectComposer.js', 'postprocessing/RenderPass.js', 'postprocessing/ShaderPass.js', 'postprocessing/UnrealBloomPass.js']) await add(s);
+      comp = new T.EffectComposer(R); comp.addPass(new T.RenderPass(scene, cam)); const b = new T.UnrealBloomPass(new T.Vector2(innerWidth, innerHeight), PHONE ? .55 : .75, .55, .82); comp.addPass(b); comp.addPass(new T.ShaderPass(T.GammaCorrectionShader)); comp._b = b; size(); } catch (e) { comp = null; } })();
   window.__play = { open, close };
   open();
 })();
