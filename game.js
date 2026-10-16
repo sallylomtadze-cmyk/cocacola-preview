@@ -147,29 +147,38 @@
   snowGlobe(0, 8, 'img/g/santabear.webp?v=2', 5.6, 4.6, true);
   for (const [a, r, img] of [[.9, 104, 'img/g/workshop.webp?v=2'], [2.6, 110, 'img/g/cuphouse.webp?v=2'], [4.4, 100, 'img/bear-sit.webp']]) { const x = Math.cos(a) * r, z = Math.sin(a) * r; snowGlobe(x, z, img, 14, 13, true); occ.push([x, z, 26]); solid.push([x, z, 13]); } occ.push([0, 8, 10], [ws.x, ws.z, 13]);
   const lamps = []; for (let i = 6; i < N; i += 26) { const p = side(i, (i / 26 | 0) % 2 ? 6.2 : -6.2); occ.push([p.x, p.z, 4]); xprop('lamp', 6.6, p.x, p.z); const g = new T.Sprite(glow(0xffc070, .65)); g.position.set(p.x, 6.1, p.z); g.scale.set(5, 5, 1); scene.add(g); lamps.push(g); }
-  for (let i = 0; i < 30; i++) { const p = side(i * 20 + 11, (i % 2 ? 1 : -1) * rnd(12, 20)); if (Math.hypot(p.x, p.z) > 14) firs.push([p.x, p.z, rnd(7, 11), 1]); }
-  for (let tries = 0, n = 0; n < (PHONE ? 110 : 190) && tries < 4000; tries++) { const a = rnd(0, 6.283), r = rnd(18, 230), x = Math.cos(a) * r, z = Math.sin(a) * r;
-    if (roadDist(x, z) < 11 || Math.hypot(x - ws.x, z - ws.z) < 14 || Math.hypot(x, z) < 16) continue; firs.push([x, z, rnd(8, 16), 0]); n++; }
+  for (let i = 0; i < 20; i++) { const p = side(i * 30 + 11, (i % 2 ? 1 : -1) * rnd(15, 22)); if (Math.hypot(p.x, p.z) > 14) firs.push([p.x, p.z, rnd(7, 11), 1]); }
+  for (let tries = 0, n = 0; n < (PHONE ? 90 : 150) && tries < 4000; tries++) { const a = rnd(0, 6.283), r = rnd(18, 230), x = Math.cos(a) * r, z = Math.sin(a) * r;
+    if (roadDist(x, z) < 11 || Math.hypot(x - ws.x, z - ws.z) < 14 || Math.hypot(x, z) < 16) continue; firs.push([x, z, rnd(7, 13), 0]); n++; }
 
+  let glintMat = null;
   function forest() { // real 3D firs: drooping tiers of snowy branches (one instanced mesh per tier for the whole forest), trunks, and lights + baubles on the decorated ones
-    const ok = firs.filter(([x, z, h, d]) => (d && x === 0 && z === -6) || (!occ.some(([ox, oz, r]) => Math.hypot(x - ox, z - oz) < r) && roadDist(x, z) > 7.5));
+    const ok = firs.filter(([x, z, h, d]) => (d && x === 0 && z === -6) || (!occ.some(([ox, oz, r]) => Math.hypot(x - ox, z - oz) < r) && roadDist(x, z) > 9));
     // each fir is built from real branches: whorls of photographed snowy branch cards (a flat and an upright card per branch) around a dark core
     const bt = new T.TextureLoader().load('img/t/branch-g.png'); bt.encoding = T.sRGBEncoding; bt.anisotropy = 8;
     const bm = new T.MeshLambertMaterial({ map: bt, alphaTest: .22, side: T.DoubleSide, color: 0xffffff, emissive: 0x020504 }), m4 = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler(0, 0, 0, 'YZX'), s3 = new T.Vector3(), p3 = new T.Vector3();
-    const plan = []; ok.forEach(([x, z, h]) => { const W = Math.round(h * 1.1) + 6; for (let w = 0; w < W; w++) { const t = w / W, y = h * (.1 + t * .86), L = h * .36 * Math.pow(1 - t, .9) + h * .03, n = Math.max(5, Math.round(11 - t * 6)), off = rnd(0, 6.28);
-      for (let k = 0; k < n; k++) { const a = off + k / n * 6.283 + rnd(-.2, .2), d = .3 + t * .15 + rnd(-.06, .06), s = L * rnd(.85, 1.1); plan.push([x, y, z, a, d, s, -Math.PI / 2 + rnd(-.25, .25)]); plan.push([x, y, z, a, d, s * .92, rnd(-.3, .3)]); } } });
-    const br = new T.InstancedMesh(new T.PlaneGeometry(1, .5).translate(.5, 0, 0), bm, plan.length);
+    const plan = []; ok.forEach(([x, z, h]) => { const W = Math.round(h * 1.5) + 8; for (let w = 0; w < W; w++) { const t = w / W, y = h * (.07 + t * .88), L = h * .47 * Math.pow(1 - t, .85) * (1 + .12 * Math.sin(t * 9)) + h * .035, n = Math.max(6, Math.round(14 - t * 8)), off = rnd(0, 6.28);
+      for (let k = 0; k < n; k++) { const a = off + k / n * 6.283 + rnd(-.2, .2), d = .18 + t * .22 + rnd(-.05, .05), s = L * rnd(.85, 1.1); plan.push([x, y, z, a, d, s, -Math.PI / 2 + rnd(-.25, .25)]); plan.push([x, y, z, a, d, s * .92, rnd(-.3, .3)]); } } });
+    const br = new T.InstancedMesh(new T.PlaneGeometry(1, .62).translate(.5, 0, 0), bm, plan.length);
     plan.forEach(([x, y, z, a, d, s, roll], n) => { e.set(roll, -a, -d); q.setFromEuler(e); m4.compose(p3.set(x, y, z), q, s3.set(s, s, s)); br.setMatrixAt(n, m4); }); scene.add(br);
     const core = new T.InstancedMesh(new T.ConeGeometry(1, 1, 10).translate(0, .5, 0), new T.MeshLambertMaterial({ color: 0x14281c }), ok.length);
-    ok.forEach(([x, z, h], n) => { m4.makeScale(h * .14, h * .92, h * .14).setPosition(x, h * .05, z); core.setMatrixAt(n, m4); }); scene.add(core);
+    ok.forEach(([x, z, h], n) => { m4.makeScale(h * .2, h * .9, h * .2).setPosition(x, h * .05, z); core.setMatrixAt(n, m4); }); scene.add(core);
     const trunk = new T.InstancedMesh(new T.CylinderGeometry(.018, .028, .2, 6).translate(0, .1, 0), new T.MeshLambertMaterial({ color: 0x3a2618 }), ok.length);
     ok.forEach(([x, z, h], n) => { m4.makeScale(h, h, h).setPosition(x, 0, z); trunk.setMatrixAt(n, m4); }); scene.add(trunk);
     const dec = ok.filter(f => f[3]), NB = 120, NBA = 26, bulbs = new T.InstancedMesh(new T.SphereGeometry(1, 6, 4), new T.MeshBasicMaterial({ color: 0xffd98a }), dec.length * NB),
       balls = new T.InstancedMesh(new T.SphereGeometry(1, 12, 8), new T.MeshPhongMaterial({ color: 0xb3000c, shininess: 110, specular: 0xffffff, emissive: 0x200000 }), dec.length * NBA); let b = 0, c = 0;
-    dec.forEach(([x, z, h]) => { for (let k = 0; k < NB + NBA; k++) { const t = Math.random(), y = .12 + t * .82, r = (.36 * Math.pow(1 - (y - .1) / .86, .9) + .03) * rnd(.55, .8), a = rnd(0, 6.28), s = k < NB ? h * .007 : h * .018;
+    dec.forEach(([x, z, h]) => { for (let k = 0; k < NB + NBA; k++) { const t = Math.random(), y = .12 + t * .82, r = (.47 * Math.pow(1 - (y - .07) / .88, .85) + .035) * rnd(.6, .85), a = rnd(0, 6.28), s = k < NB ? h * .007 : h * .018;
         m4.makeScale(s, s, s).setPosition(x + Math.cos(a) * r * h, y * h, z + Math.sin(a) * r * h); if (k < NB) bulbs.setMatrixAt(b++, m4); else balls.setMatrixAt(c++, m4); }
       const st = new T.Sprite(glow(0xffe3a0, .9)); st.position.set(x, h * .97, z); st.scale.set(h * .12, h * .12, 1); scene.add(st); });
     scene.add(bulbs, balls);
+    { const P = []; ok.forEach(([x, z, h]) => { for (let k = 0; k < 26; k++) { const y = rnd(.1, .9), r = (.47 * Math.pow(1 - (y - .07) / .88, .85) + .035) * rnd(.7, 1), a = rnd(0, 6.28); P.push(x + Math.cos(a) * r * h, y * h, z + Math.sin(a) * r * h, rnd(0, 6.28)); } });
+      const gg = new T.BufferGeometry(), arr = new Float32Array(P), pos = new Float32Array(P.length / 4 * 3), ph = new Float32Array(P.length / 4);
+      for (let i = 0; i < ph.length; i++) { pos[i * 3] = arr[i * 4]; pos[i * 3 + 1] = arr[i * 4 + 1]; pos[i * 3 + 2] = arr[i * 4 + 2]; ph[i] = arr[i * 4 + 3]; }
+      gg.setAttribute('position', new T.BufferAttribute(pos, 3)); gg.setAttribute('ph', new T.BufferAttribute(ph, 1));
+      glintMat = new T.ShaderMaterial({ transparent: true, depthWrite: false, blending: T.AdditiveBlending, uniforms: { t: { value: 0 } },
+        vertexShader: 'attribute float ph; uniform float t; varying float a; void main(){ vec4 mv = modelViewMatrix * vec4(position,1.); a = pow(max(0., sin(t * 1.6 + ph * 7.)), 12.); gl_PointSize = (2. + 40. * a) * 18. / -mv.z; gl_Position = projectionMatrix * mv; }',
+        fragmentShader: 'varying float a; void main(){ vec2 d = gl_PointCoord - .5; float r = length(d), s = max(0., 1. - r * 2.) + max(0., .06 - abs(d.x)) * 6. * (1. - r * 2.) + max(0., .06 - abs(d.y)) * 6. * (1. - r * 2.); gl_FragColor = vec4(vec3(1., .95, .85) * s * a, s * a); }' });
+      scene.add(new T.Points(gg, glintMat)); }
     ok.forEach(([x, z, h]) => { const m = new T.Mesh(moundGeo, snowMat); m.scale.set(h * .7, 1, h * .7); m.position.set(x, .08, z); scene.add(m); }); }
   // houses: a paper-cup cottage or a gift-box cottage, dark until their gift arrives
   const houses = [], NH = 8;
@@ -292,7 +301,7 @@
     if (S.end > 0) { S.end = Math.min(1, S.end + dt / 2.5); if (S.end > .6 && fin.hidden) fin.hidden = false; }
     lamps.forEach((g, i) => g.material.opacity = .55 + Math.sin(tt * 2 + i) * .05);
     gondolas.forEach(g => { g.u = (g.u + dt * .012) % 1; g.s.position.lerpVectors(cable[0], cable[1], g.u); g.s.position.y -= 7; });
-    glassMat.uniforms.t.value = tt;
+    glassMat.uniforms.t.value = tt; if (glintMat) glintMat.uniforms.t.value = tt;
     for (const o of globes) { const pa = o.flakes.geometry.attributes.position, sp2 = Math.min(1, .25 + Math.abs(S.v) / 20);
       o.seeds.forEach((f, i) => { f.a += dt * f.s * .6 * sp2; f.y -= dt * .3 * f.s; if (f.y < o.fy + .2) { f.y = o.cy + o.R * .85; f.r = rnd(.2, o.R * .85); }
         const lim = Math.sqrt(Math.max(0, o.R * o.R - (f.y - o.cy) ** 2)) * .9, r = Math.min(f.r, lim); pa.setXYZ(i, Math.cos(f.a) * r, f.y, Math.sin(f.a) * r); }); pa.needsUpdate = true;
