@@ -112,38 +112,60 @@
   // ---------- places ----------
   const S0 = 0, ws = side(S0 + 18, -17), faceRoad = (p, i) => Math.atan2(RS[i].x - p.x, RS[i].z - p.z); cottage(ws.x, ws.z, faceRoad(ws, S0 + 18), 'workshop-front', 'cottage-side', null, 1, 10, 6.4, 8).G.children[0].material[0].color.set(0x8a6a50); solid.push([ws.x, ws.z, 8]);                 // the trip starts at Santa's workshop
   { const p = side(300, 16); cottage(p.x, p.z, faceRoad(p, 300), 'cottage-front', 'cottage-side', null, 1, 8.5, 5, 7); solid.push([p.x, p.z, 7]); }
-  xprop('tree', 17, 0, -4); prop('santabear', 6.4, 0, 6); solid.push([0, 0, 9]);                                         // the square: the big tree, Santa and the bear
+  const firs = []; firs.push([0, -6, 17, 1]); solid.push([0, 0, 9]);                                         // the square: the big tree, Santa and the bear
   // real snow globes: a glass sphere with a fresnel rim and moving highlights, the bear and a little fir inside, snow swirling in the water, a red lacquer and gold base
   const sparks = [], globes = [];
   const glassMat = new T.ShaderMaterial({ transparent: true, depthWrite: false, side: T.FrontSide, uniforms: { t: { value: 0 } },
     vertexShader: 'varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position,1.); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
     fragmentShader: 'uniform float t; varying vec3 vN; varying vec3 vV; void main(){ float f = pow(1. - max(dot(vN, vV), 0.), 2.4); vec3 rim = mix(vec3(.75,.9,1.), vec3(1.,.85,.6), smoothstep(-.3,.6,vN.x)); float spec = pow(max(dot(reflect(-normalize(vec3(-.5,.7,.6)), vN), vV), 0.), 60.); float spec2 = pow(max(dot(reflect(-normalize(vec3(.6,.2,.8)), vN), vV), 0.), 24.) * .35; float irid = sin(vN.y * 9. + t * .6) * .5 + .5; vec3 c = rim * f * 1.15 + vec3(1.) * (spec + spec2) + vec3(.4,.2,.6) * f * irid * .25; gl_FragColor = vec4(c, clamp(f * .85 + spec + spec2 + .04, 0., 1.)); }' });
   const lacquer = new T.MeshPhongMaterial({ color: 0x8a0f12, shininess: 80, specular: 0x553333 }), gold = new T.MeshPhongMaterial({ color: 0xc89b3c, shininess: 90, specular: 0xffe0a0, emissive: 0x2a1a00 });
-  function snowGlobe(x, z) {
-    const G = new T.Group(); G.position.set(x, 0, z); scene.add(G); const R = 4.2, by = 2.6;
-    const base = new T.Mesh(new T.CylinderGeometry(3.9, 4.4, 2.6, 48), lacquer); base.position.y = 1.3; G.add(base);
-    for (const [y, r] of [[.12, 4.45], [2.5, 3.95], [1.3, 4.2]]) { const ring = new T.Mesh(new T.TorusGeometry(r, .14, 10, 64), gold); ring.rotation.x = Math.PI / 2; ring.position.y = y; G.add(ring); }
-    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2, l = new T.Sprite(glow(0xffc070, .8)); l.position.set(Math.cos(a) * 4.25, 1.3, Math.sin(a) * 4.25); l.scale.set(1.3, 1.3, 1); G.add(l); }
-    const floor = new T.Mesh(new T.SphereGeometry(R * .97, 40, 12, 0, Math.PI * 2, Math.PI * .62, Math.PI * .38), new T.MeshLambertMaterial({ color: 0xf2f6ff })); floor.position.y = by + R * .02; G.add(floor);
-    const inner = new T.Group(); inner.position.y = by + R * .35; G.add(inner);
-    const bear = prop('santabear', 0, 0, 0, null, false); scene.remove(bear); cards.splice(cards.indexOf(bear), 1);
-    const cub = new T.Mesh(CARD, new T.MeshBasicMaterial({ map: TL.load('img/bear-sit.webp', t => { t.encoding = T.sRGBEncoding; cub.scale.set(3.2 * t.image.width / t.image.height, 3.2, 1); }), transparent: true, alphaTest: .05 })); cub.position.set(-.8, -.2, .3); inner.add(cub);
-    const fir = prop('spruce', 0, 0, 0, null, false); scene.remove(fir); cards.splice(cards.indexOf(fir), 1); fir.userData.h = 3.6; fit(fir); users.spruce.push(fir); fir.position.set(1.7, -.2, -.6); inner.add(fir);
-    const NF = 220, fp = new Float32Array(NF * 3), seeds = []; for (let i = 0; i < NF; i++) seeds.push({ a: rnd(0, 6.28), r: rnd(.3, R * .85), y: rnd(-.6, R * .9), s: rnd(.4, 1.2) });
+  const baseTex = (() => { const t = TL.load('img/t/globe-base.jpg'); t.encoding = T.sRGBEncoding; t.wrapS = T.RepeatWrapping; t.repeat.set(2, 1); return t; })();
+  const brandBase = (() => { const c = document.createElement('canvas'); c.width = 2048; c.height = 512; const x = c.getContext('2d'), t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.wrapS = T.RepeatWrapping;
+    const bg = new Image(); bg.onload = () => { x.drawImage(bg, 0, 0, 2048, 512); x.fillStyle = 'rgba(120,0,8,.82)'; for (const cx of [512, 1536]) { x.beginPath(); x.ellipse(cx, 256, 330, 150, 0, 0, 6.3); x.fill(); }
+      const lg = new Image(); lg.onload = () => { for (const cx of [512, 1536]) { const w = 520, h = w * lg.height / lg.width; x.drawImage(lg, cx - w / 2, 256 - h / 2, w, h); } t.needsUpdate = true; }; lg.src = 'img/logo-white.png'; t.needsUpdate = true; }; bg.src = 'img/t/globe-base.jpg'; return t; })();
+  function snowGlobe(x, z, img, R = 4, figH = 3.6, brand = false) { // glass dome on a lacquered base, a figure standing on a snow floor inside, snow swirling in the water
+    const G = new T.Group(); G.position.set(x, 0, z); scene.add(G); const bh = R * .6, cy = bh + R * .75, fy = cy - R * .7;
+    const band = new T.Mesh(new T.CylinderGeometry(R * .74, R * .86, bh, 64, 1, true), new T.MeshPhongMaterial({ map: brand ? brandBase : baseTex, emissiveMap: brand ? brandBase : baseTex, emissive: 0x3a2008, shininess: 70, specular: 0x664433 })); band.position.y = bh / 2; G.add(band);
+    const lid = new T.Mesh(new T.CircleGeometry(R * .74, 48), lacquer); lid.rotation.x = -Math.PI / 2; lid.position.y = bh; G.add(lid);
+    for (const [y, r] of [[.06, R * .87], [bh, R * .745]]) { const ring = new T.Mesh(new T.TorusGeometry(r, R * .03, 10, 64), gold); ring.rotation.x = Math.PI / 2; ring.position.y = y; G.add(ring); }
+    const fr = Math.sqrt(R * R - (cy - fy) ** 2) * .98, floor = new T.Mesh(new T.SphereGeometry(fr, 40, 10, 0, Math.PI * 2, 0, Math.PI / 2), new T.MeshLambertMaterial({ map: TX('snow', 1, 1), color: 0xffffff })); floor.scale.y = .28; floor.position.y = fy; G.add(floor);
+    const under = new T.Mesh(new T.CylinderGeometry(fr, R * .74, fy - bh, 48), new T.MeshLambertMaterial({ map: TX('snow', 1, 1) })); under.position.y = (fy + bh) / 2; G.add(under);
+    const fig = new T.Mesh(CARD, new T.MeshBasicMaterial({ transparent: true, alphaTest: .05, map: TL.load(img, t => { t.encoding = T.sRGBEncoding; fig.scale.set(figH * t.image.width / t.image.height, figH, 1); }) }));
+    fig.position.y = fy + .15; fig.scale.set(0, 0, 0); G.add(fig);
+    const NF = 260, fp = new Float32Array(NF * 3), seeds = []; for (let i = 0; i < NF; i++) seeds.push({ a: rnd(0, 6.28), r: rnd(.2, R * .85), y: rnd(fy, cy + R * .8), s: rnd(.4, 1.2) });
     const fg = new T.BufferGeometry(); fg.setAttribute('position', new T.BufferAttribute(fp, 3));
-    const flakes = new T.Points(fg, new T.PointsMaterial({ color: 0xffffff, size: .13, transparent: true, opacity: .95, depthWrite: false })); flakes.position.y = by; G.add(flakes);
-    const glass = new T.Mesh(new T.SphereGeometry(R, 48, 32), glassMat); glass.position.y = by + R * .82; glass.renderOrder = 3; G.add(glass);
-    const halo = new T.Sprite(glow(0xa8d8ff, .35)); halo.position.y = by + R; halo.scale.set(15, 15, 1); G.add(halo);
-    globes.push({ G, inner, cub, fir, flakes, seeds, R, gy: R * .82 });
-    for (let i = 0; i < 22; i++) { const s = new T.Sprite(glow(i % 3 ? 0xfff2cc : 0xbfe4ff, 0)); s.scale.set(.45, .45, 1); scene.add(s); sparks.push({ s, x, z, a: rnd(0, 6.28), r: rnd(5, 8), y: rnd(1, 12), v: rnd(.3, .9), ph: rnd(0, 6.28) }); }
-    const m = new T.Mesh(moundGeo, snowMat); m.scale.set(13, 1, 11); m.position.set(x, .1, z); scene.add(m);
+    const flakes = new T.Points(fg, new T.PointsMaterial({ color: 0xffffff, size: .12, transparent: true, opacity: .95, depthWrite: false })); G.add(flakes);
+    const glass = new T.Mesh(new T.SphereGeometry(R, 48, 32), glassMat); glass.position.y = cy; glass.renderOrder = 3; G.add(glass);
+    const inLight = new T.PointLight(0xffd9a8, .9, R * 3, 2); inLight.position.set(0, cy + R * .4, R * .3); G.add(inLight);
+    const halo = new T.Sprite(glow(0xa8d8ff, .28)); halo.position.y = cy; halo.scale.set(R * 3.4, R * 3.4, 1); G.add(halo);
+    globes.push({ G, fig, flakes, seeds, R, cy, fy });
+    for (let i = 0; i < 22; i++) { const s = new T.Sprite(glow(i % 3 ? 0xfff2cc : 0xbfe4ff, 0)); s.scale.set(.45, .45, 1); scene.add(s); sparks.push({ s, x, z, a: rnd(0, 6.28), r: rnd(R * 1.2, R * 2), y: rnd(1, 12), v: rnd(.3, .9), ph: rnd(0, 6.28) }); }
+    const m = new T.Mesh(moundGeo, snowMat); m.scale.set(R * 3.4, 1, R * 3); m.position.set(x, .1, z); scene.add(m);
   }
-  for (const k of [130, 410, 520]) { const p = side(k, k % 2 ? 14 : -14); snowGlobe(p.x, p.z); solid.push([p.x, p.z, 4.6]); }
-  const lamps = []; for (let i = 6; i < N; i += 26) { const p = side(i, (i / 26 | 0) % 2 ? 6.2 : -6.2); xprop('lamp', 6.6, p.x, p.z); const g = new T.Sprite(glow(0xffc070, .65)); g.position.set(p.x, 6.1, p.z); g.scale.set(5, 5, 1); scene.add(g); lamps.push(g); }
-  for (let i = 0; i < 30; i++) { const p = side(i * 20 + 11, (i % 2 ? 1 : -1) * rnd(12, 20)); if (Math.hypot(p.x, p.z) > 14) xprop('tree', rnd(7, 11), p.x, p.z); }
+  const occ = []; for (const k of [130, 410, 520]) { const p = side(k, k % 2 ? 14 : -14); snowGlobe(p.x, p.z, 'img/bear-sit.webp'); solid.push([p.x, p.z, 4]); occ.push([p.x, p.z, 7]); }
+  snowGlobe(0, 8, 'img/g/santabear.webp?v=2', 5.6, 4.6, true);
+  for (const [a, r, img] of [[.9, 104, 'img/g/workshop.webp?v=2'], [2.6, 110, 'img/g/cuphouse.webp?v=2'], [4.4, 100, 'img/bear-sit.webp']]) { const x = Math.cos(a) * r, z = Math.sin(a) * r; snowGlobe(x, z, img, 14, 13, true); occ.push([x, z, 26]); solid.push([x, z, 13]); } occ.push([0, 8, 10], [ws.x, ws.z, 13]);
+  const lamps = []; for (let i = 6; i < N; i += 26) { const p = side(i, (i / 26 | 0) % 2 ? 6.2 : -6.2); occ.push([p.x, p.z, 4]); xprop('lamp', 6.6, p.x, p.z); const g = new T.Sprite(glow(0xffc070, .65)); g.position.set(p.x, 6.1, p.z); g.scale.set(5, 5, 1); scene.add(g); lamps.push(g); }
+  for (let i = 0; i < 30; i++) { const p = side(i * 20 + 11, (i % 2 ? 1 : -1) * rnd(12, 20)); if (Math.hypot(p.x, p.z) > 14) firs.push([p.x, p.z, rnd(7, 11), 1]); }
   for (let tries = 0, n = 0; n < (PHONE ? 110 : 190) && tries < 4000; tries++) { const a = rnd(0, 6.283), r = rnd(18, 230), x = Math.cos(a) * r, z = Math.sin(a) * r;
-    if (roadDist(x, z) < 11 || Math.hypot(x - ws.x, z - ws.z) < 14 || Math.hypot(x, z) < 16) continue; xprop('spruce', rnd(8, 16), x, z); n++; }
+    if (roadDist(x, z) < 11 || Math.hypot(x - ws.x, z - ws.z) < 14 || Math.hypot(x, z) < 16) continue; firs.push([x, z, rnd(8, 16), 0]); n++; }
 
+  function forest() { // real 3D firs: drooping tiers of snowy branches (one instanced mesh per tier for the whole forest), trunks, and lights + baubles on the decorated ones
+    const ok = firs.filter(([x, z, h, d]) => (d && x === 0 && z === -6) || (!occ.some(([ox, oz, r]) => Math.hypot(x - ox, z - oz) < r) && roadDist(x, z) > 7.5));
+    const ft = TX('fir', 3, 2), mat = new T.MeshLambertMaterial({ map: ft, color: 0xa9c8b2, emissive: 0x060d0a }), TIERS = 9, m4 = new T.Matrix4(), q = new T.Quaternion(), s3 = new T.Vector3(), p3 = new T.Vector3();
+    const tier = i => { const r = .3 * (1 - i / 9.6), hh = .22, g = new T.ConeGeometry(r, hh, 26, 3, true), p = g.attributes.position;
+      for (let k = 0; k < p.count; k++) { const y = p.getY(k), lo = y < -hh * .3; if (lo) { const a = Math.atan2(p.getZ(k), p.getX(k)), j = .78 + .32 * Math.abs(Math.sin(a * 5.5 + i * 1.3)); p.setX(k, p.getX(k) * j); p.setZ(k, p.getZ(k) * j); p.setY(k, y - (1 - j) * .12); } }
+      g.computeVertexNormals(); g.translate(0, .08 + i * .093 + hh / 2, 0); return g; };
+    for (let i = 0; i < TIERS; i++) { const im = new T.InstancedMesh(tier(i), mat, ok.length); ok.forEach(([x, z, h], n) => { q.setFromAxisAngle(p3.set(0, 1, 0), rnd(0, 6.28)); m4.compose(p3.set(x, 0, z), q, s3.set(h, h, h)); im.setMatrixAt(n, m4); }); scene.add(im); }
+    const trunk = new T.InstancedMesh(new T.CylinderGeometry(.018, .028, .2, 6).translate(0, .1, 0), new T.MeshLambertMaterial({ color: 0x3a2618 }), ok.length);
+    ok.forEach(([x, z, h], n) => { m4.makeScale(h, h, h).setPosition(x, 0, z); trunk.setMatrixAt(n, m4); }); scene.add(trunk);
+    const dec = ok.filter(f => f[3]), NB = 46, bulbs = new T.InstancedMesh(new T.SphereGeometry(1, 6, 4), new T.MeshBasicMaterial({ color: 0xffcf7a }), dec.length * NB),
+      balls = new T.InstancedMesh(new T.SphereGeometry(1, 12, 8), new T.MeshPhongMaterial({ color: 0xb3000c, shininess: 110, specular: 0xffffff, emissive: 0x200000 }), dec.length * 14); let b = 0, c = 0;
+    dec.forEach(([x, z, h]) => { for (let k = 0; k < NB + 14; k++) { const t = Math.random(), y = .12 + t * .8, r = .3 * (1 - (y - .08) / .9) * .92, a = rnd(0, 6.28), s = k < NB ? h * .0065 : h * .016;
+        m4.makeScale(s, s, s).setPosition(x + Math.cos(a) * r * h, y * h, z + Math.sin(a) * r * h); if (k < NB) bulbs.setMatrixAt(b++, m4); else balls.setMatrixAt(c++, m4); }
+      const st = new T.Sprite(glow(0xffe3a0, .9)); st.position.set(x, h * .97, z); st.scale.set(h * .12, h * .12, 1); scene.add(st); });
+    scene.add(bulbs, balls);
+    ok.forEach(([x, z, h]) => { const m = new T.Mesh(moundGeo, snowMat); m.scale.set(h * .7, 1, h * .7); m.position.set(x, .08, z); scene.add(m); }); }
   // houses: a paper-cup cottage or a gift-box cottage, dark until their gift arrives
   const houses = [], NH = 8;
   for (let k = 0; k < NH; k++) {
@@ -156,9 +178,10 @@
     const col = new T.Mesh(new T.CylinderGeometry(1, 1, 30, 24, 1, true), new T.MeshBasicMaterial({ color: 0xff2a2a, transparent: true, opacity: .14, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide })); col.position.y = 15; bea.add(col);
     const ring = new T.Mesh(new T.TorusGeometry(1.8, .1, 8, 48), new T.MeshBasicMaterial({ color: 0xff3b30 })); ring.rotation.x = Math.PI / 2; ring.position.y = .3; bea.add(ring);
     const smoke = []; for (let s = 0; s < 6; s++) { const m = new T.Sprite(new T.SpriteMaterial({ map: smokeTex, transparent: true, opacity: 0, depthWrite: false })); scene.add(m); smoke.push({ m, t: s / 6 }); }
-    houses.push({ litM, gl, bea, ring, col, smoke, p, h, door, L: 0, done: false }); solid.push([p.x, p.z, 5.2]);
+    occ.push([p.x, p.z, 10]); houses.push({ litM, gl, bea, ring, col, smoke, p, h, door, L: 0, done: false }); solid.push([p.x, p.z, 5.2]);
   }
 
+  forest();
   // the gondola line high over the valley
   const cable = [new T.Vector3(-260, 70, -150), new T.Vector3(260, 92, -40)];
   scene.add(new T.Line(new T.BufferGeometry().setFromPoints(cable), new T.LineBasicMaterial({ color: 0x1a2234 })));
@@ -166,10 +189,35 @@
 
   // ---------- the truck: the photographic rear view, its lights and the golden tracks it leaves ----------
   const truck = new T.Group(); scene.add(truck);
-  const rear = prop('truckrear', 5.4, 0, 0, null, false); scene.remove(rear); cards.splice(cards.indexOf(rear), 1); truck.add(rear);
+  const rear = new T.Group(); truck.add(rear);
+  { const L = 12.6, H = L * 412 / 1292, X = 1.3, red = new T.MeshLambertMaterial({ color: 0xc0000a }), chrome = new T.MeshPhongMaterial({ color: 0xc9d2de, shininess: 100, specular: 0xffffff });
+    const z = px => (px / 1292 - .5) * L, y = py => (412 - py) / 412 * H;
+    const img = new Image(); img.onload = () => {
+      const mk = flip => { const c = document.createElement('canvas'); c.width = 1292; c.height = 412; const x = c.getContext('2d');
+        if (flip) { x.translate(1292, 0); x.scale(-1, 1); } x.drawImage(img, 0, 0); x.setTransform(1, 0, 0, 1, 0, 0);
+        if (flip) { const g = x.createLinearGradient(0, 40, 0, 290); g.addColorStop(0, '#d8121c'); g.addColorStop(1, '#b4000a'); x.fillStyle = g; x.fillRect(1292 - 720, 70, 480, 175); const lg = new Image(); lg.onload = () => { x.drawImage(lg, 1292 - 705, 85, 450, 450 * lg.height / lg.width); t.needsUpdate = true; }; lg.src = 'img/logo-white.png'; }
+        const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = 8; return t; };
+      for (const [s, flip] of [[-1, false], [1, true]]) { const p = new T.Mesh(new T.PlaneGeometry(L, H), new T.MeshLambertMaterial({ map: mk(flip), transparent: true, alphaTest: .08, emissive: 0x220000 })); p.rotation.y = s * Math.PI / 2; p.position.set(s * X, H / 2, 0); rear.add(p); } };
+    img.src = 'img/truck.webp';
+    const box = (w, h, d, zc, yc, m) => { const b = new T.Mesh(new T.BoxGeometry(w, h, d), m); b.position.set(0, yc, zc); rear.add(b); return b; };
+    const tb = new T.TextureLoader().load('img/g/truckrear.webp'); tb.encoding = T.sRGBEncoding; tb.repeat.set(.62, .6); tb.offset.set(.19, .4);
+    const back = new T.MeshLambertMaterial({ map: tb, emissive: 0x1a0000 });
+    box(X * 2 - .04, y(10) - y(300), z(855) - z(0), (z(855) + z(0)) / 2, (y(10) + y(300)) / 2, [red, red, red, red, red, red]);
+    box(2.2, y(95) - y(305), z(1120) - z(860), (z(1120) + z(860)) / 2, (y(95) + y(305)) / 2, red);
+    box(1.95, y(215) - y(330), z(1285) - z(1120), (z(1285) + z(1120)) / 2, (y(215) + y(330)) / 2, red);
+    // from behind it keeps the photographic rear the visitor liked: the full rear photo stands on the back of the trailer
+    { const rp = new T.Mesh(new T.PlaneGeometry(1, 1).translate(0, .5, 0), new T.MeshLambertMaterial({ map: tb, transparent: true, alphaTest: .06, emissive: 0x1a0000 })); tb.repeat.set(1, 1); tb.offset.set(0, 0); rp.scale.set(4.2, 4.1, 1); rp.rotation.y = Math.PI; rp.position.set(0, 0, z(0) - .04); rear.add(rp); }
+    const grille = box(1.2, .9, .05, z(1290), y(275), chrome);
+    const wind = box(2.0, .55, .05, z(1118), y(170), new T.MeshPhongMaterial({ color: 0x0b1424, shininess: 120, specular: 0x8899bb })); wind.rotation.x = -.15;
+    for (const s of [-1, 1]) { const st = new T.Mesh(new T.CylinderGeometry(.09, .09, 2.4, 10), chrome); st.position.set(s * .95, y(150), z(935)); rear.add(st); }
+    const tire = new T.MeshLambertMaterial({ color: 0x14161b }); for (const px of [300, 412, 693, 1135]) for (const s of [-1, 1]) { const w = new T.Mesh(new T.CylinderGeometry(.52, .52, .45, 20), tire); w.rotation.z = Math.PI / 2; w.position.set(s * 1.05, y(360), z(px)); rear.add(w); }
+    for (const s of [-.95, .95]) { const t = new T.Mesh(new T.BoxGeometry(.35, .18, .05), new T.MeshBasicMaterial({ color: 0xff2a20 })); t.position.set(s, y(292), z(0) - .03); rear.add(t); const h2 = new T.Mesh(new T.CircleGeometry(.17, 16), new T.MeshBasicMaterial({ color: 0xfff3d8 })); h2.position.set(s * .8, y(298), z(1292) + .01); rear.add(h2); }
+    { const n = 2 * 44, b = new T.InstancedMesh(new T.SphereGeometry(.06, 6, 4), new T.MeshBasicMaterial({ color: 0xffc46a }), n), m = new T.Matrix4(); let k = 0;
+      for (const s of [-1, 1]) for (let i = 0; i < 44; i++) { m.makeTranslation(s * (X + .02), y(12), z(0) + (i + .5) * (z(855) - z(0)) / 44); b.setMatrixAt(k++, m); } rear.add(b); }
+    rear.position.z = -1.2; }
   const beam = new T.SpotLight(0xfff0d0, 3, 70, .5, .55, 1.1); beam.position.set(0, 1.6, 6); beam.target.position.set(0, 0, 24); truck.add(beam, beam.target);
   const warm = new T.PointLight(0xffa860, 1.4, 20, 2); warm.position.set(0, 5, -1); truck.add(warm);
-  { const h = new T.Sprite(glow(0xffa860, .22)); h.scale.set(12, 8, 1); h.position.set(0, 3, 0); truck.add(h); }
+
   const NT = PHONE ? 260 : 520, track = new T.InstancedMesh(new T.PlaneGeometry(.32, .62), new T.MeshBasicMaterial({ color: 0xffffff, map: glowTex, transparent: true, blending: T.AdditiveBlending, depthWrite: false }), NT);
   track.instanceMatrix.setUsage(T.DynamicDrawUsage); scene.add(track);
   const marks = []; let lastMark = null; const m4 = new T.Matrix4(), q = new T.Quaternion(), e3 = new T.Euler(), one = new T.Vector3(1, 1, 1), col = new T.Color(), tmp = new T.Vector3();
@@ -196,7 +244,7 @@
   stick.addEventListener('pointermove', e => touch.on && move(e));
   const up = () => { touch.on = false; touch.x = touch.y = 0; knob.style.transform = ''; }; stick.addEventListener('pointerup', up); stick.addEventListener('pointercancel', up);
   function move(e) { const r = stick.getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2), m = Math.min(1, Math.hypot(dx, dy) / 44), a = Math.atan2(dy, dx); touch.x = Math.cos(a) * m; touch.y = -Math.sin(a) * m; knob.style.transform = `translate(${Math.cos(a) * m * 34}px,${Math.sin(a) * m * 34}px)`; }
-  const view = { yaw: 0, pitch: .2, dist: 15, drag: null, idle: 0 };
+  const view = { yaw: 0, pitch: .24, dist: 19, drag: null, idle: 0 };
   cv.addEventListener('pointerdown', e => { view.drag = [e.clientX, e.clientY, e.pointerId]; view.idle = 0; try { cv.setPointerCapture(e.pointerId); } catch (_) { } });
   cv.addEventListener('pointermove', e => { const d = view.drag; if (!d || d[2] !== e.pointerId) return; view.yaw -= (e.clientX - d[0]) * .0065; view.pitch = clamp(view.pitch + (e.clientY - d[1]) * .004, .04, 1.05); d[0] = e.clientX; d[1] = e.clientY; });
   const endDrag = () => { view.drag = null; }; cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
@@ -222,7 +270,7 @@
     for (const [x, z, r] of solid) { const d = Math.hypot(nx - x, nz - z), rr = r + 2.2; if (d < rr) { nx = x + (nx - x) / d * rr; nz = z + (nz - z) / d * rr; S.v *= .7; } }
     { const d = Math.hypot(nx, nz); if (d > 200) { nx = nx / d * 200; nz = nz / d * 200; } }
     S.x = nx; S.z = nz;
-    truck.position.set(S.x, 0, S.z); truck.rotation.y = S.yaw; rear.rotation.z = -S.steer * clamp(S.v / 20, 0, 1) * .025; rear.rotation.y = Math.PI + 0; rear.position.y = Math.abs(S.v) > 1 ? Math.sin(tt * 18) * .015 : 0;
+    truck.position.set(S.x, 0, S.z); truck.rotation.y = S.yaw; rear.rotation.z = -S.steer * clamp(S.v / 20, 0, 1) * .03; rear.position.y = Math.abs(S.v) > 1 ? Math.sin(tt * 18) * .015 : 0;
     // golden tracks on the snow behind the wheels, fading slowly
     if (Math.abs(S.v) > .5 && (!lastMark || Math.hypot(S.x - lastMark[0], S.z - lastMark[1]) > .55)) { lastMark = [S.x, S.z]; for (const sd of [-1.05, 1.05]) marks.push({ x: S.x + Math.cos(S.yaw) * sd - Math.sin(S.yaw) * 1.6, z: S.z - Math.sin(S.yaw) * sd - Math.cos(S.yaw) * 1.6, yaw: S.yaw, age: 0 }); while (marks.length > NT) marks.shift(); }
     for (let i = 0; i < marks.length; i++) { const m = marks[i]; m.age += dt; const k = Math.max(0, 1 - m.age / 9); e3.set(-Math.PI / 2, 0, m.yaw); q.setFromEuler(e3); m4.compose(tmp.set(m.x, .09, m.z), q, one); track.setMatrixAt(i, m4); const tw = .75 + .25 * Math.sin(tt * 9 + i * 1.3); track.setColorAt(i, col.setRGB(.95 * k * tw, .62 * k * tw, .22 * k * tw)); }
@@ -241,9 +289,9 @@
     gondolas.forEach(g => { g.u = (g.u + dt * .012) % 1; g.s.position.lerpVectors(cable[0], cable[1], g.u); g.s.position.y -= 7; });
     glassMat.uniforms.t.value = tt;
     for (const o of globes) { const pa = o.flakes.geometry.attributes.position, sp2 = Math.min(1, .25 + Math.abs(S.v) / 20);
-      o.seeds.forEach((f, i) => { f.a += dt * f.s * .6 * sp2; f.y -= dt * .35 * f.s; if (f.y < -.4) { f.y = o.R * 1.55; f.r = rnd(.3, o.R * .85); }
-        const yy = f.y, lim = Math.sqrt(Math.max(0, o.R * o.R - (yy - o.gy) ** 2)) * .92, r = Math.min(f.r, lim); pa.setXYZ(i, Math.cos(f.a) * r, yy, Math.sin(f.a) * r); }); pa.needsUpdate = true;
-      const ya = Math.atan2(cam.position.x - o.G.position.x, cam.position.z - o.G.position.z); o.cub.rotation.y = ya; o.fir.rotation.y = ya; }
+      o.seeds.forEach((f, i) => { f.a += dt * f.s * .6 * sp2; f.y -= dt * .3 * f.s; if (f.y < o.fy + .2) { f.y = o.cy + o.R * .85; f.r = rnd(.2, o.R * .85); }
+        const lim = Math.sqrt(Math.max(0, o.R * o.R - (f.y - o.cy) ** 2)) * .9, r = Math.min(f.r, lim); pa.setXYZ(i, Math.cos(f.a) * r, f.y, Math.sin(f.a) * r); }); pa.needsUpdate = true;
+      o.fig.rotation.y = Math.atan2(cam.position.x - o.G.position.x, cam.position.z - o.G.position.z); }
     sparks.forEach(p => { p.a += dt * .35; p.y += dt * p.v; if (p.y > 12) p.y = 1; p.s.position.set(p.x + Math.cos(p.a) * p.r, p.y, p.z + Math.sin(p.a) * p.r); p.s.material.opacity = Math.max(0, Math.sin(tt * 3 + p.ph)) * .9 * Math.sin(p.y / 12 * Math.PI); });
     // edge arrow toward the nearest dark house
     if (near) { tmp.copy(near.door).setY(2).project(cam); const behind = tmp.z > 1, ox = behind ? -tmp.x : tmp.x, oy = behind ? -tmp.y : tmp.y, inView = !behind && Math.abs(tmp.x) < .85 && Math.abs(tmp.y) < .8;
@@ -254,7 +302,6 @@
     { const a = S.yaw + view.yaw, hd = view.dist * Math.cos(view.pitch); camPos.set(S.x - Math.sin(a) * hd, 2.4 + view.dist * Math.sin(view.pitch) + S.v * .03, S.z - Math.cos(a) * hd); }
     cam.position.lerp(camPos, view.drag ? 1 : 1 - Math.pow(.02, dt)); camLook.set(S.x + Math.sin(S.yaw) * 3, 2.6, S.z + Math.cos(S.yaw) * 3); cam.lookAt(camLook);
     for (const c of cards) c.rotation.y = Math.atan2(cam.position.x - c.position.x, cam.position.z - c.position.z);
-    rear.rotation.y = Math.atan2(cam.position.x - S.x, cam.position.z - S.z) - S.yaw;
     const p = snow.geometry.attributes.position; for (let i = 0; i < NS; i++) { let y = p.getY(i) - dt * (2.2 + (i % 5) * .3); if (y < 0) y += 40; p.setY(i, y); p.setX(i, p.getX(i) + Math.sin(tt + i) * .004); } p.needsUpdate = true; snow.position.set(S.x, 0, S.z);
     for (const m of motes) { m.y += dt * m.v; if (m.y > 15) m.y = .5; const x = S.x + m.x + Math.sin(tt * .4 + m.ph) * 2, z = S.z + m.z + Math.cos(tt * .3 + m.ph) * 2; m.s.position.set(x, m.y, z); m.s.material.opacity = (Math.sin(tt * 1.7 + m.ph) * .5 + .5) * .7; }
     if (comp) comp.render(); else R.render(scene, cam); requestAnimationFrame(loop);
@@ -263,6 +310,6 @@
   const add = s => new Promise((ok, no) => { const e = document.createElement('script'); e.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/' + s; e.onload = ok; e.onerror = no; document.head.appendChild(e); });
   (async () => { try { for (const s of ['shaders/CopyShader.js', 'shaders/LuminosityHighPassShader.js', 'shaders/GammaCorrectionShader.js', 'postprocessing/EffectComposer.js', 'postprocessing/RenderPass.js', 'postprocessing/ShaderPass.js', 'postprocessing/UnrealBloomPass.js']) await add(s);
       comp = new T.EffectComposer(R); comp.addPass(new T.RenderPass(scene, cam)); const b = new T.UnrealBloomPass(new T.Vector2(innerWidth, innerHeight), PHONE ? .55 : .75, .55, .82); comp.addPass(b); comp.addPass(new T.ShaderPass(T.GammaCorrectionShader)); comp._b = b; size(); } catch (e) { comp = null; } })();
-  window.__play = { open, close };
+  window.__play = { open, close, S, side };
   open();
 })();
