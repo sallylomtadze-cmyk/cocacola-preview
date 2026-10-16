@@ -154,8 +154,8 @@
   function forest() { // real 3D firs: drooping tiers of snowy branches (one instanced mesh per tier for the whole forest), trunks, and lights + baubles on the decorated ones
     const ok = firs.filter(([x, z, h, d]) => (d && x === 0 && z === -6) || (!occ.some(([ox, oz, r]) => Math.hypot(x - ox, z - oz) < r) && roadDist(x, z) > 7.5));
     // each fir is built from real branches: whorls of photographed snowy branch cards (a flat and an upright card per branch) around a dark core
-    const bt = new T.TextureLoader().load('img/t/branch.png'); bt.encoding = T.sRGBEncoding; bt.anisotropy = 8;
-    const bm = new T.MeshLambertMaterial({ map: bt, alphaTest: .22, side: T.DoubleSide, color: 0xc9d6cd, emissive: 0x050a08 }), m4 = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler(0, 0, 0, 'YZX'), s3 = new T.Vector3(), p3 = new T.Vector3();
+    const bt = new T.TextureLoader().load('img/t/branch-g.png'); bt.encoding = T.sRGBEncoding; bt.anisotropy = 8;
+    const bm = new T.MeshLambertMaterial({ map: bt, alphaTest: .22, side: T.DoubleSide, color: 0xffffff, emissive: 0x020504 }), m4 = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler(0, 0, 0, 'YZX'), s3 = new T.Vector3(), p3 = new T.Vector3();
     const plan = []; ok.forEach(([x, z, h]) => { const W = Math.round(h * 1.1) + 6; for (let w = 0; w < W; w++) { const t = w / W, y = h * (.1 + t * .86), L = h * .36 * Math.pow(1 - t, .9) + h * .03, n = Math.max(5, Math.round(11 - t * 6)), off = rnd(0, 6.28);
       for (let k = 0; k < n; k++) { const a = off + k / n * 6.283 + rnd(-.2, .2), d = .3 + t * .15 + rnd(-.06, .06), s = L * rnd(.85, 1.1); plan.push([x, y, z, a, d, s, -Math.PI / 2 + rnd(-.25, .25)]); plan.push([x, y, z, a, d, s * .92, rnd(-.3, .3)]); } } });
     const br = new T.InstancedMesh(new T.PlaneGeometry(1, .5).translate(.5, 0, 0), bm, plan.length);
@@ -164,9 +164,9 @@
     ok.forEach(([x, z, h], n) => { m4.makeScale(h * .14, h * .92, h * .14).setPosition(x, h * .05, z); core.setMatrixAt(n, m4); }); scene.add(core);
     const trunk = new T.InstancedMesh(new T.CylinderGeometry(.018, .028, .2, 6).translate(0, .1, 0), new T.MeshLambertMaterial({ color: 0x3a2618 }), ok.length);
     ok.forEach(([x, z, h], n) => { m4.makeScale(h, h, h).setPosition(x, 0, z); trunk.setMatrixAt(n, m4); }); scene.add(trunk);
-    const dec = ok.filter(f => f[3]), NB = 90, NBA = 16, bulbs = new T.InstancedMesh(new T.SphereGeometry(1, 6, 4), new T.MeshBasicMaterial({ color: 0xffcf7a }), dec.length * NB),
+    const dec = ok.filter(f => f[3]), NB = 120, NBA = 26, bulbs = new T.InstancedMesh(new T.SphereGeometry(1, 6, 4), new T.MeshBasicMaterial({ color: 0xffd98a }), dec.length * NB),
       balls = new T.InstancedMesh(new T.SphereGeometry(1, 12, 8), new T.MeshPhongMaterial({ color: 0xb3000c, shininess: 110, specular: 0xffffff, emissive: 0x200000 }), dec.length * NBA); let b = 0, c = 0;
-    dec.forEach(([x, z, h]) => { for (let k = 0; k < NB + NBA; k++) { const t = Math.random(), y = .12 + t * .82, r = (.36 * Math.pow(1 - (y - .1) / .86, .9) + .03) * rnd(.55, .8), a = rnd(0, 6.28), s = k < NB ? h * .006 : h * .014;
+    dec.forEach(([x, z, h]) => { for (let k = 0; k < NB + NBA; k++) { const t = Math.random(), y = .12 + t * .82, r = (.36 * Math.pow(1 - (y - .1) / .86, .9) + .03) * rnd(.55, .8), a = rnd(0, 6.28), s = k < NB ? h * .007 : h * .018;
         m4.makeScale(s, s, s).setPosition(x + Math.cos(a) * r * h, y * h, z + Math.sin(a) * r * h); if (k < NB) bulbs.setMatrixAt(b++, m4); else balls.setMatrixAt(c++, m4); }
       const st = new T.Sprite(glow(0xffe3a0, .9)); st.position.set(x, h * .97, z); st.scale.set(h * .12, h * .12, 1); scene.add(st); });
     scene.add(bulbs, balls);
