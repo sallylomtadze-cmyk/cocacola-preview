@@ -197,7 +197,7 @@
     const z = px => (px / 1292 - .5) * L, y = py => (412 - py) / 412 * H;
     const img = new Image(); img.onload = () => {
       const mk = flip => { const t = new T.TextureLoader().load(flip ? 'img/truck-side-r.webp?v=1' : 'img/truck.webp'); t.encoding = T.sRGBEncoding; t.anisotropy = 8; return t; }; // the mirrored side is a clean prepared image, the script reads correctly
-      for (const [s, flip] of [[-1, false], [1, true]]) { const p = new T.Mesh(new T.PlaneGeometry(L, H), new T.MeshBasicMaterial({ map: mk(flip), transparent: true, alphaTest: .08 })); p.rotation.y = s * Math.PI / 2; p.position.set(s * X, H / 2, 0); rear.add(p); } };
+      for (const [s, flip] of [[-1, false], [1, true]]) { const p = new T.Mesh(new T.PlaneGeometry(L, H), new T.MeshBasicMaterial({ map: mk(flip), transparent: true, alphaTest: .08 })); p.rotation.y = s * Math.PI / 2; p.position.set(s * X, H / 2, 0); rear.add(p); }  rear.userData.ready = 1; };
     img.src = 'img/truck.webp';
     const box = (w, h, d, zc, yc, m) => { const b = new T.Mesh(new T.BoxGeometry(w, h, d), m); b.position.set(0, yc, zc); rear.add(b); return b; };
     const tb = new T.TextureLoader().load('img/g/truckrear.webp'); tb.encoding = T.sRGBEncoding; tb.repeat.set(.62, .6); tb.offset.set(.19, .4);
@@ -261,8 +261,8 @@
 
   // ---------- state, input ----------
   const trail = [], convoy = [];
-  setTimeout(() => { for (let i = 1; i <= 2; i++) { const c = new T.Group(); c.add(rear.clone()); const t = tangent(S0 + 4); c.position.copy(side(S0 + 4, 0)).addScaledVector(t, -20 * i); c.rotation.y = Math.atan2(t.x, t.z); scene.add(c); convoy.push(c); }
-    for (let k = 84; k > 0; k--) { const t = tangent(S0 + 4), p = side(S0 + 4, 0).addScaledVector(t, -k * .5); trail.push([p.x, p.z, Math.atan2(t.x, t.z)]); } }, 2500);
+  const mkConvoy = () => { if (!rear.userData.ready) return setTimeout(mkConvoy, 300); for (let i = 1; i <= 2; i++) { const c = new T.Group(); c.add(rear.clone()); const t = tangent(S0 + 4); c.position.copy(side(S0 + 4, 0)).addScaledVector(t, -31 * i); c.rotation.y = Math.atan2(t.x, t.z); scene.add(c); convoy.push(c); }
+    for (let k = 130; k > 0; k--) { const t = tangent(S0 + 4), p = side(S0 + 4, 0).addScaledVector(t, -k * .5); trail.push([p.x, p.z, Math.atan2(t.x, t.z)]); } }; setTimeout(mkConvoy, 800);
   const st = side(S0 + 4, 0), S = { x: st.x, z: st.z, yaw: 0, v: 0, steer: 0, done: 0, end: 0, on: false };
   { const t = tangent(S0 + 4); S.yaw = Math.atan2(t.x, t.z); }
   const keys = {}, touch = { x: 0, y: 0, on: false };
@@ -277,15 +277,16 @@
   cv.addEventListener('pointerdown', e => { view.drag = [e.clientX, e.clientY, e.pointerId]; view.idle = 0; try { cv.setPointerCapture(e.pointerId); } catch (_) { } });
   cv.addEventListener('pointermove', e => { const d = view.drag; if (!d || d[2] !== e.pointerId) return; view.yaw -= (e.clientX - d[0]) * .0065; view.pitch = clamp(view.pitch + (e.clientY - d[1]) * .004, .04, 1.05); d[0] = e.clientX; d[1] = e.clientY; });
   const endDrag = () => { view.drag = null; }; cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
-  cv.addEventListener('wheel', e => { e.preventDefault(); view.dist = clamp(view.dist + e.deltaY * .02, 7, 34); }, { passive: false });
+  cv.addEventListener('wheel', e => { e.preventDefault(); view.dist = clamp(view.dist + e.deltaY * .02, 7, 40); view.zoomed = 1; }, { passive: false });
   const cnt = $('#pcnt'), arrow = $('#parrow'), fin = $('#pfin');
   const music = new Audio('audio/truck.mp3'); music.loop = true; music.volume = .7;
   const setCount = () => cnt.textContent = `${S.done} / ${NH}`;
   function open() { root.hidden = false; document.documentElement.classList.add('playing'); S.on = true; size(); setCount(); try { const p = root.requestFullscreen && root.requestFullscreen(); p && p.catch && p.catch(() => { }); } catch (_) { } if (window.__site && window.__site.soundOn()) music.play().catch(() => { }); window.__playing = true; last = performance.now(); requestAnimationFrame(loop); }
   function close() { S.on = false; root.hidden = true; document.documentElement.classList.remove('playing'); music.pause(); window.__playing = false; if (document.fullscreenElement) document.exitFullscreen().catch(() => { }); }
+  let finAt = 0;
   function restart() { houses.forEach(o => { o.done = false; o.L = 0; o.bea.visible = true; }); S.done = 0; S.end = 0; fin.hidden = true; setCount(); }
-  $('#pclose').addEventListener('click', close); $('#pagain').addEventListener('click', restart); $('#pexit').addEventListener('click', close);
-  let lw = 0, lh = 0; function size() { const w = cv.clientWidth || innerWidth, h = cv.clientHeight || innerHeight; lw = w; lh = h; R.setPixelRatio(Math.min(PHONE ? 1.5 : 2, devicePixelRatio || 1)); R.setSize(w, h, false); if (comp) comp.setSize(w, h); cam.aspect = w / h; cam.updateProjectionMatrix(); }
+  $('#pclose').addEventListener('click', close); $('#pagain').addEventListener('click', () => { if (performance.now() - finAt > 900) restart(); }); $('#pexit').addEventListener('click', close);
+  let lw = 0, lh = 0; function size() { const w = cv.clientWidth || innerWidth, h = cv.clientHeight || innerHeight; lw = w; lh = h; R.setPixelRatio(Math.min(PHONE ? 1.5 : 2, devicePixelRatio || 1)); R.setSize(w, h, false); if (comp) comp.setSize(w, h); cam.aspect = w / h; cam.fov = w < h ? 66 : 52; if (!view.zoomed) { view.dist = w < h ? 26 : 19; view.pitch = view.base = w < h ? .36 : .24; } cam.updateProjectionMatrix(); }
 
   // ---------- the loop ----------
   let last = 0, tt = 0; const camPos = new T.Vector3(), camLook = new T.Vector3();
@@ -300,8 +301,8 @@
     { const d = Math.hypot(nx, nz); if (d > 200) { nx = nx / d * 200; nz = nz / d * 200; } }
     S.x = nx; S.z = nz;
     for (const w of wake) { if (!w.k && Math.hypot(w.x - S.x, w.z - S.z) < 20) w.k = .001; if (w.k > 0 && w.k < 1) { w.k = Math.min(1, w.k + dt / 1.1); const e = w.k * w.k * (3 - 2 * w.k); w.m.color.setRGB(.16 + .84 * e, .2 + .8 * e, .28 + .72 * e); w.gl.material.opacity = Math.sin(e * Math.PI) * .9 + e * .25; } }
-    if (Math.abs(S.v) > .3 && (!trail.length || Math.hypot(trail[trail.length - 1][0] - S.x, trail[trail.length - 1][1] - S.z) > .5)) { trail.push([S.x, S.z, S.yaw]); if (trail.length > 200) trail.shift(); }
-    convoy.forEach((c, i) => { const p = trail[Math.max(0, trail.length - 1 - (i + 1) * 40)]; if (p) { c.position.lerp(tmp.set(p[0], 0, p[1]), Math.min(1, dt * 6)); let dy = p[2] - c.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); c.rotation.y += dy * Math.min(1, dt * 6); } });
+    if (Math.abs(S.v) > .3 && (!trail.length || Math.hypot(trail[trail.length - 1][0] - S.x, trail[trail.length - 1][1] - S.z) > .5)) { trail.push([S.x, S.z, S.yaw]); if (trail.length > 300) trail.shift(); }
+    convoy.forEach((c, i) => { const p = trail[Math.max(0, trail.length - 1 - (i + 1) * 62)]; if (p) { c.position.lerp(tmp.set(p[0], 0, p[1]), Math.min(1, dt * 6)); let dy = p[2] - c.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); c.rotation.y += dy * Math.min(1, dt * 6); } c.visible = c.position.distanceTo(cam.position) > 9; });
     truck.position.set(S.x, 0, S.z); truck.rotation.y = S.yaw; rear.rotation.z = -S.steer * clamp(S.v / 20, 0, 1) * .03; rear.position.y = Math.abs(S.v) > 1 ? Math.sin(tt * 18) * .015 : 0;
     // golden tracks on the snow behind the wheels, fading slowly
     if (Math.abs(S.v) > .5 && (!lastMark || Math.hypot(S.x - lastMark[0], S.z - lastMark[1]) > .55)) { lastMark = [S.x, S.z]; for (const sd of [-1.05, 1.05]) marks.push({ x: S.x + Math.cos(S.yaw) * sd - Math.sin(S.yaw) * 1.6, z: S.z - Math.sin(S.yaw) * sd - Math.cos(S.yaw) * 1.6, yaw: S.yaw, age: 0 }); while (marks.length > NT) marks.shift(); }
@@ -316,7 +317,7 @@
       o.smoke.forEach(s => { s.t = (s.t + dt * .14) % 1; s.m.position.set(o.p.x + Math.sin(s.t * 6 + o.p.z) * .5, o.h * .95 + s.t * 7, o.p.z); const k = 1.2 + s.t * 3.5; s.m.scale.set(k, k, 1); s.m.material.opacity = o.L * .45 * Math.sin(s.t * Math.PI); }); }
     for (let i = flying.length - 1; i >= 0; i--) { const f = flying[i]; f.t += dt / .9; const k = Math.min(1, f.t); f.g.position.lerpVectors(f.a, f.b, k); f.g.position.y += Math.sin(k * Math.PI) * 6; f.g.rotation.y += dt * 5;
       if (k >= 1) { flying.splice(i, 1); scene.remove(f.g); f.o.L = .001; S.done++; setCount(); if (S.done === NH) S.end = .001; } }
-    if (S.end > 0) { S.end = Math.min(1, S.end + dt / 2.5); if (S.end > .6 && fin.hidden) fin.hidden = false; }
+    if (S.end > 0) { S.end = Math.min(1, S.end + dt / 2.5); if (S.end > .6 && fin.hidden) { fin.hidden = false; finAt = performance.now(); } }
     lamps.forEach((g, i) => g.material.opacity = .55 + Math.sin(tt * 2 + i) * .05);
     gondolas.forEach(g => { g.u = (g.u + dt * .012) % 1; g.s.position.lerpVectors(cable[0], cable[1], g.u); g.s.position.y -= 7; });
     glassMat.uniforms.t.value = tt; if (glintMat) glintMat.uniforms.t.value = tt;
@@ -330,8 +331,9 @@
       arrow.hidden = inView; if (!inView) { const a = Math.atan2(-oy, ox); arrow.style.left = (50 + Math.cos(a) * 36) + '%'; arrow.style.top = (50 + Math.sin(a) * 40) + '%'; arrow.style.transform = `translate(-50%,-50%) rotate(${a}rad)`; }
       $('#pdist').textContent = Math.round(nd) + ' მ'; } else arrow.hidden = true;
     // chase camera
-    if (!view.drag && Math.abs(S.v) > 2) { view.yaw *= Math.pow(.25, dt); view.pitch += (.2 - view.pitch) * Math.min(1, dt * 1.5); }
+    if (!view.drag && Math.abs(S.v) > 2) { view.yaw *= Math.pow(.25, dt); view.pitch += ((view.base || .24) - view.pitch) * Math.min(1, dt * 1.5); }
     { const a = S.yaw + view.yaw, hd = view.dist * Math.cos(view.pitch); camPos.set(S.x - Math.sin(a) * hd, 2.4 + view.dist * Math.sin(view.pitch) + S.v * .03, S.z - Math.cos(a) * hd); }
+    for (let it = 0; it < 12; it++) { let hit = false; for (const [x, z, r] of solid) if (Math.hypot(camPos.x - x, camPos.z - z) < r + 1.5) { hit = true; break; } if (!hit) break; camPos.x += (S.x - camPos.x) * .15; camPos.z += (S.z - camPos.z) * .15; camPos.y += .6; } // never sit inside a house or a globe
     cam.position.lerp(camPos, view.drag ? 1 : 1 - Math.pow(.02, dt)); camLook.set(S.x + Math.sin(S.yaw) * 3, 2.6, S.z + Math.cos(S.yaw) * 3); cam.lookAt(camLook);
     for (const c of cards) c.rotation.y = Math.atan2(cam.position.x - c.position.x, cam.position.z - c.position.z);
     const p = snow.geometry.attributes.position; for (let i = 0; i < NS; i++) { let y = p.getY(i) - dt * (2.2 + (i % 5) * .3); if (y < 0) y += 40; p.setY(i, y); p.setX(i, p.getX(i) + Math.sin(tt + i) * .004); } p.needsUpdate = true; snow.position.set(S.x, 0, S.z);
@@ -342,6 +344,6 @@
   const add = s => new Promise((ok, no) => { const e = document.createElement('script'); e.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/' + s; e.onload = ok; e.onerror = no; document.head.appendChild(e); });
   (async () => { try { for (const s of ['shaders/CopyShader.js', 'shaders/LuminosityHighPassShader.js', 'shaders/GammaCorrectionShader.js', 'postprocessing/EffectComposer.js', 'postprocessing/RenderPass.js', 'postprocessing/ShaderPass.js', 'postprocessing/UnrealBloomPass.js']) await add(s);
       comp = new T.EffectComposer(R); comp.addPass(new T.RenderPass(scene, cam)); const b = new T.UnrealBloomPass(new T.Vector2(innerWidth, innerHeight), PHONE ? .55 : .75, .55, .82); comp.addPass(b); comp.addPass(new T.ShaderPass(T.GammaCorrectionShader)); comp._b = b; size(); } catch (e) { comp = null; } })();
-  window.__play = { open, close, S, side };
+  window.__play = { open, close, S, side, houses, restart };
   open();
 })();

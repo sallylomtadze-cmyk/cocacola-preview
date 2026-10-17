@@ -291,6 +291,7 @@ html.playing,html.playing body{overflow:hidden}
 .p-stick span{position:absolute;left:38px;top:38px;width:44px;height:44px;border-radius:50%;background:linear-gradient(180deg,#ff5a60,#d8000b)}
 @media (hover:none){.p-stick{display:block}}
 .p-fin{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:auto;animation:pop .7s var(--e)}
+.p-fin::before{content:'';position:absolute;left:50%;top:50%;width:150vmax;height:150vmax;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(6,12,32,.62),rgba(6,12,32,.35) 40%,transparent 70%);z-index:-1;pointer-events:none}
 .p-fin h2{font-size:clamp(36px,5vw,72px);line-height:1.05;margin-bottom:26px;text-shadow:0 6px 40px rgba(255,120,60,.45)}
 .p-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 @media (max-width:860px){.play-truck{width:88vw}.playui .btn{margin-bottom:calc(88vw * 412 / 1292 + 4vh)}}
