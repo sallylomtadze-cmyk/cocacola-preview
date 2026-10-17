@@ -23,7 +23,7 @@
     if (s.userData.x) s.scale.set(w, s.userData.h, w); else s.scale.set(w, s.userData.h, 1); if (s.userData.onfit && !s.userData.built) { s.userData.built = 1; s.userData.onfit(w, s.userData.h, im); }
     if (s.userData.mound && !s.userData.m) { const m = new T.Mesh(moundGeo, snowMat); m.scale.set(w * 1.15, 1, w * .8); m.position.set(s.position.x, .1, s.position.z); m.renderOrder = -1; scene.add(m); s.userData.m = m; } };
   function prop(n, h, x, z, extra, mound = true) {
-    if (!mats[n]) { users[n] = []; const t = TL.load('img/g/' + n + '.webp?v=4', () => users[n].forEach(fit)); t.encoding = T.sRGBEncoding; t.anisotropy = 4; mats[n] = new T.MeshBasicMaterial({ map: t, transparent: true, alphaTest: .04, side: T.DoubleSide }); }
+    if (!mats[n]) { users[n] = []; const t = TL.load('img/g/' + n + '.webp?v=5', () => users[n].forEach(fit)); t.encoding = T.sRGBEncoding; t.anisotropy = 4; mats[n] = new T.MeshBasicMaterial({ map: t, transparent: true, alphaTest: .04, side: T.DoubleSide }); }
     const s = new T.Mesh(CARD, extra ? Object.assign(mats[n].clone(), extra) : mats[n]); s.userData.h = h; s.userData.mound = mound; s.position.set(x, 0, z); s.scale.set(0, 0, 0); scene.add(s); users[n].push(s); cards.push(s); fit(s); return s;
   }
   function xprop(n, h, x, z) { // three crossed cards: reads as a full tree from every side
