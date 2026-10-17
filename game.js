@@ -86,7 +86,10 @@
     const top = new T.Mesh(new T.CircleGeometry(330, 48), new T.MeshBasicMaterial({ color: 0x050b1e, fog: false })); top.rotation.x = Math.PI / 2; top.position.y = 147; scene.add(top);
     const ac = document.createElement('canvas'); ac.width = 512; ac.height = 64; const ax = ac.getContext('2d');
     for (let i = 0; i < 512; i += 2) { const h = 22 + Math.sin(i * .02) * 10 + Math.sin(i * .07) * 4, gg = ax.createLinearGradient(0, 64, 0, 64 - h * 1.6); gg.addColorStop(0, 'rgba(90,255,200,0)'); gg.addColorStop(.3, 'rgba(90,255,200,.3)'); gg.addColorStop(1, 'rgba(120,140,255,0)'); ax.fillStyle = gg; ax.fillRect(i, 0, 2, 64); }
-    const aur = new T.Mesh(new T.CylinderGeometry(300, 300, 70, 64, 1, true, 3.4, 2.6), new T.MeshBasicMaterial({ map: new T.CanvasTexture(ac), transparent: true, side: T.BackSide, fog: false, blending: T.AdditiveBlending, depthWrite: false })); aur.position.y = 120; scene.add(aur); }
+    const aur = new T.Mesh(new T.CylinderGeometry(300, 300, 70, 64, 1, true, 3.4, 2.6), new T.MeshBasicMaterial({ map: new T.CanvasTexture(ac), transparent: true, side: T.BackSide, fog: false, blending: T.AdditiveBlending, depthWrite: false })); aur.position.y = 120; scene.add(aur);
+    const dc = document.createElement('canvas'); dc.width = 256; dc.height = 128; const dx = dc.getContext('2d'), dg = dx.createLinearGradient(0, 0, 0, 128);
+    dg.addColorStop(0, 'rgba(255,150,120,0)'); dg.addColorStop(.55, 'rgba(255,140,110,.55)'); dg.addColorStop(.8, 'rgba(255,190,120,.7)'); dg.addColorStop(1, 'rgba(255,200,140,0)'); dx.fillStyle = dg; dx.fillRect(0, 0, 256, 128); dx.globalCompositeOperation = 'destination-in'; const hx = dx.createLinearGradient(0, 0, 256, 0); hx.addColorStop(0, 'rgba(0,0,0,0)'); hx.addColorStop(.35, 'rgba(0,0,0,1)'); hx.addColorStop(.65, 'rgba(0,0,0,1)'); hx.addColorStop(1, 'rgba(0,0,0,0)'); dx.fillStyle = hx; dx.fillRect(0, 0, 256, 128);
+    const dusk = new T.Mesh(new T.CylinderGeometry(310, 310, 60, 64, 1, true, 4.4, 2.4), new T.MeshBasicMaterial({ map: new T.CanvasTexture(dc), transparent: true, side: T.BackSide, fog: false, blending: T.AdditiveBlending, depthWrite: false, opacity: .8 })); dusk.position.y = 18; scene.add(dusk); }
   scene.add(new T.HemisphereLight(0x6d86c8, 0x101833, .8));
 
   // ---------- snow ground and the road loop ----------
@@ -105,7 +108,7 @@
     const g = new T.CanvasTexture(c); g.wrapT = T.RepeatWrapping; const pos = [], uv = [], idx = []; let L = 0;
     for (let i = 0; i <= N; i++) { const p = RS[i % N], a = side(i, 4.4), b = side(i, -4.4); if (i) L += p.distanceTo(RS[(i - 1) % N]); pos.push(a.x, .07, a.z, b.x, .07, b.z); uv.push(0, L / 9, 1, L / 9); if (i) idx.push(i * 2 - 2, i * 2 - 1, i * 2, i * 2 - 1, i * 2 + 1, i * 2); }
     const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
-    scene.add(new T.Mesh(geo, new T.MeshLambertMaterial({ map: g, polygonOffset: true, polygonOffsetFactor: -2 }))); }
+    scene.add(new T.Mesh(geo, new T.MeshPhongMaterial({ map: g, color: 0x8892a8, shininess: 110, specular: 0x9aa8c8, polygonOffset: true, polygonOffsetFactor: -2 }))); }
   const roadDist = (x, z) => { let m = 1e9; for (let i = 0; i < N; i += 3) { const d = (RS[i].x - x) ** 2 + (RS[i].z - z) ** 2; if (d < m) m = d; } return Math.sqrt(m); };
   const solid = []; // circles the truck cannot drive through
 
@@ -148,16 +151,25 @@
   for (const [a, r, img] of [[.9, 104, 'img/g/workshop.webp?v=2'], [2.6, 110, 'img/g/cuphouse.webp?v=2'], [4.4, 100, 'img/bear-sit.webp']]) { const x = Math.cos(a) * r, z = Math.sin(a) * r; snowGlobe(x, z, img, 14, 13, true); occ.push([x, z, 26]); solid.push([x, z, 13]); } occ.push([0, 8, 10], [ws.x, ws.z, 13]);
   const lamps = []; for (let i = 6; i < N; i += 26) { const p = side(i, (i / 26 | 0) % 2 ? 6.2 : -6.2); occ.push([p.x, p.z, 4]); prop('lamp', 6.6, p.x, p.z).position.y = -.12; const g = new T.Sprite(glow(0xffc070, .65)); g.position.set(p.x, 6.1, p.z); g.scale.set(5, 5, 1); scene.add(g); lamps.push(g); }
   for (let i = 0; i < 20; i++) { const p = side(i * 30 + 11, (i % 2 ? 1 : -1) * rnd(15, 22)); if (Math.hypot(p.x, p.z) > 14) firs.push([p.x, p.z, rnd(7, 11), 1]); }
-  for (let tries = 0, n = 0; n < (PHONE ? 90 : 150) && tries < 4000; tries++) { const a = rnd(0, 6.283), r = rnd(18, 230), x = Math.cos(a) * r, z = Math.sin(a) * r;
-    if (roadDist(x, z) < 11 || Math.hypot(x - ws.x, z - ws.z) < 14 || Math.hypot(x, z) < 16) continue; firs.push([x, z, rnd(7, 13), 0]); n++; }
+  // trees grow the way they do in games: in groves (a tall mother tree, younger ones around it, saplings at the edge), open glades between,
+  // and a dense forest wall on the far slopes
+  const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+  for (let c = 0, tries = 0; c < (PHONE ? 16 : 26) && tries < 400; tries++) { const a = rnd(0, 6.283), r = rnd(24, 150), cx = Math.cos(a) * r, cz = Math.sin(a) * r;
+    if (roadDist(cx, cz) < 16 || Math.hypot(cx, cz) < 20) continue; c++; const k = 3 + (Math.random() * 6 | 0), big = rnd(11, 15);
+    firs.push([cx, cz, big, 0]); for (let i = 0; i < k; i++) { const d = rnd(4, 13), aa = rnd(0, 6.283), x = cx + Math.cos(aa) * d * (1 + gauss() * .3), z = cz + Math.sin(aa) * d * (1 + gauss() * .3);
+      firs.push([x, z, Math.max(3, big * (1 - d / 18) * rnd(.7, 1.05)), 0]); } }
+  for (let i = 0; i < (PHONE ? 60 : 110); i++) { const a = i / (PHONE ? 60 : 110) * 6.283 + rnd(-.03, .03), r = rnd(165, 215); firs.push([Math.cos(a) * r, Math.sin(a) * r, rnd(12, 20), 0]); }
 
   let glintMat = null;
   function forest() { // the photographed trees the visitor liked, as crossed cards, spaced like a real forest (no clumps)
     const ok = [];
     for (const f of firs) { const [x, z, h, d] = f, sq = d && x === 0 && z === -6;
       if (!sq && (occ.some(([ox, oz, r]) => Math.hypot(x - ox, z - oz) < r) || roadDist(x, z) < 9)) continue;
-      if (ok.some(([x2, z2, h2]) => Math.hypot(x - x2, z - z2) < (h + h2) * .42)) continue; ok.push(f); }
-    ok.forEach(([x, z, h, d]) => xprop(d ? 'tree' : 'spruce', h, x, z)); }
+      if (ok.some(([x2, z2, h2]) => Math.hypot(x - x2, z - z2) < (h + h2) * .27)) continue; ok.push(f); }
+    ok.forEach(([x, z, h, d]) => { const G = xprop(d ? 'tree' : 'spruce', h, x, z); if (!d || (x === 0 && z === -6)) return;
+      const m = mats.tree.clone(); m.color.setHex(0x2a3348); G.children.forEach(c => c.material = m);
+      const gl = new T.Sprite(glow(0xffc070, 0)); gl.position.set(x, h * .5, z); gl.scale.set(h * 1.1, h * 1.1, 1); scene.add(gl); wake.push({ x, z, m, gl, k: 0 }); }); }
+  const wake = [];
   // houses: a paper-cup cottage or a gift-box cottage, dark until their gift arrives
   const houses = [], NH = 8;
   for (let k = 0; k < NH; k++) {
@@ -181,27 +193,50 @@
   // ---------- the truck: the photographic rear view, its lights and the golden tracks it leaves ----------
   const truck = new T.Group(); scene.add(truck);
   const rear = new T.Group(); truck.add(rear);
-  { const L = 12.6, H = L * 412 / 1292, X = 1.12, red = new T.MeshLambertMaterial({ color: 0xc0000a }), chrome = new T.MeshPhongMaterial({ color: 0xc9d2de, shininess: 100, specular: 0xffffff });
+  { const L = 12.6, H = L * 412 / 1292, X = 1.12, red = new T.MeshBasicMaterial({ color: new T.Color(0xa20e1c).convertSRGBToLinear() }), chrome = new T.MeshPhongMaterial({ color: 0xc9d2de, shininess: 100, specular: 0xffffff });
     const z = px => (px / 1292 - .5) * L, y = py => (412 - py) / 412 * H;
     const img = new Image(); img.onload = () => {
-      const mk = flip => { const c = document.createElement('canvas'); c.width = 1292; c.height = 412; const x = c.getContext('2d');
-        if (flip) { x.translate(1292, 0); x.scale(-1, 1); } x.drawImage(img, 0, 0); x.setTransform(1, 0, 0, 1, 0, 0);
-        if (flip) { const g = x.createLinearGradient(0, 40, 0, 290); g.addColorStop(0, '#d8121c'); g.addColorStop(1, '#b4000a'); x.fillStyle = g; x.fillRect(1292 - 720, 70, 480, 175); const lg = new Image(); lg.onload = () => { x.drawImage(lg, 1292 - 705, 85, 450, 450 * lg.height / lg.width); t.needsUpdate = true; }; lg.src = 'img/logo-white.png'; }
-        const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = 8; return t; };
-      for (const [s, flip] of [[-1, false], [1, true]]) { const p = new T.Mesh(new T.PlaneGeometry(L, H), new T.MeshLambertMaterial({ map: mk(flip), transparent: true, alphaTest: .08, emissive: 0x220000 })); p.rotation.y = s * Math.PI / 2; p.position.set(s * X, H / 2, 0); rear.add(p); } };
+      const mk = flip => { const t = new T.TextureLoader().load(flip ? 'img/truck-side-r.webp?v=1' : 'img/truck.webp'); t.encoding = T.sRGBEncoding; t.anisotropy = 8; return t; }; // the mirrored side is a clean prepared image, the script reads correctly
+      for (const [s, flip] of [[-1, false], [1, true]]) { const p = new T.Mesh(new T.PlaneGeometry(L, H), new T.MeshBasicMaterial({ map: mk(flip), transparent: true, alphaTest: .08 })); p.rotation.y = s * Math.PI / 2; p.position.set(s * X, H / 2, 0); rear.add(p); } };
     img.src = 'img/truck.webp';
     const box = (w, h, d, zc, yc, m) => { const b = new T.Mesh(new T.BoxGeometry(w, h, d), m); b.position.set(0, yc, zc); rear.add(b); return b; };
     const tb = new T.TextureLoader().load('img/g/truckrear.webp'); tb.encoding = T.sRGBEncoding; tb.repeat.set(.62, .6); tb.offset.set(.19, .4);
     const back = new T.MeshLambertMaterial({ map: tb, emissive: 0x1a0000 });
     box(X * 2 - .04, y(10) - y(300), z(855) - z(0), (z(855) + z(0)) / 2, (y(10) + y(300)) / 2, [red, red, new T.MeshLambertMaterial({ color: 0x6e0d14 }), red, red, red]);
-    box(2.2, y(95) - y(305), z(1120) - z(860), (z(1120) + z(860)) / 2, (y(95) + y(305)) / 2, red);
-    box(1.95, y(215) - y(330), z(1285) - z(1120), (z(1285) + z(1120)) / 2, (y(215) + y(330)) / 2, red);
+    box(2.2, y(95) - y(305), z(1120) - z(860), (z(1120) + z(860)) / 2, (y(95) + y(305)) / 2, [red, red, new T.MeshBasicMaterial({ color: new T.Color(0x8a0a16).convertSRGBToLinear() }), red, red, red]);
+    { // sleeper roof fairing: a smooth sloped deflector from the cab roof up to the trailer, like the real Coca-Cola truck
+      const zf = z(1120) - .35, zb = z(860) + .02, y0 = y(95), y1 = y(10) - .02, sh = new T.Shape();
+      sh.moveTo(zb, y0); sh.lineTo(zf, y0); sh.quadraticCurveTo(zf - .55, y0 + (y1 - y0) * .2, (zf + zb) / 2 - .2, y1 - .05); sh.lineTo(zb, y1); sh.lineTo(zb, y0);
+      const fg = new T.ExtrudeGeometry(sh, { depth: 2.1, bevelEnabled: true, bevelSize: .06, bevelThickness: .06, bevelSegments: 3, curveSegments: 16 });
+      fg.rotateY(-Math.PI / 2); fg.translate(1.05, 0, 0);
+      const fair = new T.Mesh(fg, new T.MeshBasicMaterial({ color: new T.Color(0x9c0d1a).convertSRGBToLinear() })); rear.add(fair);
+      // side windows and a chrome trim line on the cab
+      const glassM = new T.MeshPhongMaterial({ color: 0x0b1424, shininess: 120, specular: 0x8899bb });
+      for (const s of [-1, 1]) { const w = new T.Mesh(new T.PlaneGeometry(.75, .5), glassM); w.rotation.y = s * Math.PI / 2; w.position.set(s * 1.105, y(150), z(1120) - .55); rear.add(w);
+        const trim = new T.Mesh(new T.BoxGeometry(.02, .05, z(1120) - z(860)), chrome); trim.position.set(s * 1.11, y(230), (z(1120) + z(860)) / 2); rear.add(trim); }
+    }
+    { // hood with softly rounded edges instead of a sharp box
+      const w = 1.95, h = y(215) - y(330), d = z(1285) - z(1120), r = .22, bt = .14, s = new T.Shape();
+      s.moveTo(-w / 2 + r, -h / 2); s.lineTo(w / 2 - r, -h / 2); s.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r); s.lineTo(w / 2, h / 2 - r); s.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2);
+      s.lineTo(-w / 2 + r, h / 2); s.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r); s.lineTo(-w / 2, -h / 2 + r); s.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2);
+      const hg = new T.ExtrudeGeometry(s, { depth: d - bt * 2, bevelEnabled: true, bevelThickness: bt, bevelSize: bt * .8, bevelSegments: 5, curveSegments: 10 });
+      const hd = new T.Mesh(hg, red); hd.position.set(0, (y(215) + y(330)) / 2, z(1120) + bt); rear.add(hd); }
     // from behind it keeps the photographic rear the visitor liked: the full rear photo stands on the back of the trailer
     { const rp = new T.Mesh(new T.PlaneGeometry(1, 1).translate(0, .5, 0), new T.MeshBasicMaterial({ map: tb, transparent: true, alphaTest: .06 })); tb.repeat.set(1, 1); tb.offset.set(0, 0); rp.scale.set(4.1 * 710 / 804, 4.1, 1); rp.rotation.y = Math.PI; rp.position.set(0, 0, z(0) - .04); rear.add(rp); }
-    const grille = box(1.2, .9, .05, z(1290), y(275), chrome);
-    const wind = box(2.0, .55, .05, z(1118), y(170), new T.MeshPhongMaterial({ color: 0x0b1424, shininess: 120, specular: 0x8899bb })); wind.rotation.x = -.15;
+    // the photographed, branded front is laid onto the real front faces (trailer nose, cab, hood + grille, bumper), flush, so it wraps the volume
+    { const P = 1024, skin = (x0, y0, x1, y1, w, h, zc, yc) => { const t = new T.TextureLoader().load('img/g/truckfront.webp?v=2'); t.encoding = T.sRGBEncoding; t.anisotropy = 8;
+        t.repeat.set((x1 - x0) / P, (y1 - y0) / P); t.offset.set(x0 / P, 1 - y1 / P);
+        const m = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ map: t, transparent: true, alphaTest: .1 })); m.position.set(0, yc, zc); rear.add(m); return m; };
+      const tw = X * 2 - .04, ty0 = y(300), ty1 = y(10);
+      skin(300, 128, 725, 128 + 425 * (ty1 - ty0) / tw, tw, ty1 - ty0, z(855) + .012, (ty0 + ty1) / 2);                       // trailer nose with its logo
+      skin(286, 206, 740, 206 + 454 * (y(95) - y(305)) / 2.2, 2.2, y(95) - y(305), z(1120) + .012, (y(95) + y(305)) / 2);                                       // cab: visor logo, windshield, lights
+      const hw = 2.5, hh = hw * (790 - 470) / (838 - 186); skin(186, 470, 838, 790, hw, hh, z(1285) + .012, y(330) + hh / 2 - .05); // hood face: grille, wreath, headlights, fenders
+      // the script printed on the hood, read from the front like a real decal
+      { const lt = new T.TextureLoader().load('img/logo-white.png'); lt.encoding = T.sRGBEncoding; lt.anisotropy = 8; const lw = 1.45, lh = lw * 159 / 500;
+        const d = new T.Mesh(new T.PlaneGeometry(lw, lh), new T.MeshBasicMaterial({ map: lt, transparent: true, depthWrite: false, opacity: .95 })); d.rotation.set(-Math.PI / 2, 0, 0); d.position.set(0, y(215) + .012, (z(1285) + z(1120)) / 2 + .1); rear.add(d); }
+      const bh = hw * (912 - 790) / (838 - 186); skin(186, 790, 838, 912, hw, bh, z(1285) + .03, y(330) - bh / 2 - .03); }       // chrome bumper
     for (const s of [-1, 1]) { const st = new T.Mesh(new T.CylinderGeometry(.09, .09, 2.4, 10), chrome); st.position.set(s * .95, y(150), z(935)); rear.add(st); }
-    const tire = new T.MeshLambertMaterial({ color: 0x14161b }); for (const px of [300, 412, 693, 1135]) for (const s of [-1, 1]) { const w = new T.Mesh(new T.CylinderGeometry(.52, .52, .45, 20), tire); w.rotation.z = Math.PI / 2; w.position.set(s * 1.05, y(360), z(px)); rear.add(w); }
+    const tire = new T.MeshLambertMaterial({ color: 0x14161b }); for (const px of [300, 412, 693, 1135]) for (const s of [-1, 1]) { const w = new T.Mesh(new T.CylinderGeometry(.5, .5, .5, 20), tire); w.rotation.z = Math.PI / 2; w.position.set(s * .78, y(360), z(px)); rear.add(w); }
     for (const s of [-.95, .95]) { const h2 = new T.Mesh(new T.CircleGeometry(.17, 16), new T.MeshBasicMaterial({ color: 0xfff3d8 })); h2.position.set(s * .8, y(298), z(1292) + .01); rear.add(h2); }
     { const n = 2 * 44, b = new T.InstancedMesh(new T.SphereGeometry(.06, 6, 4), new T.MeshBasicMaterial({ color: 0xffc46a }), n), m = new T.Matrix4(); let k = 0;
       for (const s of [-1, 1]) for (let i = 0; i < 44; i++) { m.makeTranslation(s * (X + .02), y(12), z(0) + (i + .5) * (z(855) - z(0)) / 44); b.setMatrixAt(k++, m); } rear.add(b); }
@@ -225,6 +260,9 @@
   function gift(o) { const g = new T.Group(); g.add(new T.Mesh(new T.BoxGeometry(1, .8, 1), giftM[0])); for (const r of [[1.02, .82, .18], [.18, .82, 1.02]]) g.add(new T.Mesh(new T.BoxGeometry(...r), giftM[1])); g.position.set(S.x, 4.6, S.z); scene.add(g); flying.push({ g, a: g.position.clone(), b: o.door.clone().setY(.4), t: 0, o }); }
 
   // ---------- state, input ----------
+  const trail = [], convoy = [];
+  setTimeout(() => { for (let i = 1; i <= 2; i++) { const c = new T.Group(); c.add(rear.clone()); const t = tangent(S0 + 4); c.position.copy(side(S0 + 4, 0)).addScaledVector(t, -20 * i); c.rotation.y = Math.atan2(t.x, t.z); scene.add(c); convoy.push(c); }
+    for (let k = 84; k > 0; k--) { const t = tangent(S0 + 4), p = side(S0 + 4, 0).addScaledVector(t, -k * .5); trail.push([p.x, p.z, Math.atan2(t.x, t.z)]); } }, 2500);
   const st = side(S0 + 4, 0), S = { x: st.x, z: st.z, yaw: 0, v: 0, steer: 0, done: 0, end: 0, on: false };
   { const t = tangent(S0 + 4); S.yaw = Math.atan2(t.x, t.z); }
   const keys = {}, touch = { x: 0, y: 0, on: false };
@@ -261,6 +299,9 @@
     for (const [x, z, r] of solid) { const d = Math.hypot(nx - x, nz - z), rr = r + 2.2; if (d < rr) { nx = x + (nx - x) / d * rr; nz = z + (nz - z) / d * rr; S.v *= .7; } }
     { const d = Math.hypot(nx, nz); if (d > 200) { nx = nx / d * 200; nz = nz / d * 200; } }
     S.x = nx; S.z = nz;
+    for (const w of wake) { if (!w.k && Math.hypot(w.x - S.x, w.z - S.z) < 20) w.k = .001; if (w.k > 0 && w.k < 1) { w.k = Math.min(1, w.k + dt / 1.1); const e = w.k * w.k * (3 - 2 * w.k); w.m.color.setRGB(.16 + .84 * e, .2 + .8 * e, .28 + .72 * e); w.gl.material.opacity = Math.sin(e * Math.PI) * .9 + e * .25; } }
+    if (Math.abs(S.v) > .3 && (!trail.length || Math.hypot(trail[trail.length - 1][0] - S.x, trail[trail.length - 1][1] - S.z) > .5)) { trail.push([S.x, S.z, S.yaw]); if (trail.length > 200) trail.shift(); }
+    convoy.forEach((c, i) => { const p = trail[Math.max(0, trail.length - 1 - (i + 1) * 40)]; if (p) { c.position.lerp(tmp.set(p[0], 0, p[1]), Math.min(1, dt * 6)); let dy = p[2] - c.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); c.rotation.y += dy * Math.min(1, dt * 6); } });
     truck.position.set(S.x, 0, S.z); truck.rotation.y = S.yaw; rear.rotation.z = -S.steer * clamp(S.v / 20, 0, 1) * .03; rear.position.y = Math.abs(S.v) > 1 ? Math.sin(tt * 18) * .015 : 0;
     // golden tracks on the snow behind the wheels, fading slowly
     if (Math.abs(S.v) > .5 && (!lastMark || Math.hypot(S.x - lastMark[0], S.z - lastMark[1]) > .55)) { lastMark = [S.x, S.z]; for (const sd of [-1.05, 1.05]) marks.push({ x: S.x + Math.cos(S.yaw) * sd - Math.sin(S.yaw) * 1.6, z: S.z - Math.sin(S.yaw) * sd - Math.cos(S.yaw) * 1.6, yaw: S.yaw, age: 0 }); while (marks.length > NT) marks.shift(); }
