@@ -23,7 +23,7 @@
     if (s.userData.x) s.scale.set(w, s.userData.h, w); else s.scale.set(w, s.userData.h, 1); if (s.userData.onfit && !s.userData.built) { s.userData.built = 1; s.userData.onfit(w, s.userData.h, im); }
     if (s.userData.mound && !s.userData.m) { const m = new T.Mesh(moundGeo, snowMat); m.scale.set(w * 1.15, 1, w * .8); m.position.set(s.position.x, .1, s.position.z); m.renderOrder = -1; scene.add(m); s.userData.m = m; } };
   function prop(n, h, x, z, extra, mound = true) {
-    if (!mats[n]) { users[n] = []; const t = TL.load('img/g/' + n + '.webp?v=2', () => users[n].forEach(fit)); t.encoding = T.sRGBEncoding; t.anisotropy = 4; mats[n] = new T.MeshBasicMaterial({ map: t, transparent: true, alphaTest: .04, side: T.DoubleSide }); }
+    if (!mats[n]) { users[n] = []; const t = TL.load('img/g/' + n + '.webp?v=4', () => users[n].forEach(fit)); t.encoding = T.sRGBEncoding; t.anisotropy = 4; mats[n] = new T.MeshBasicMaterial({ map: t, transparent: true, alphaTest: .04, side: T.DoubleSide }); }
     const s = new T.Mesh(CARD, extra ? Object.assign(mats[n].clone(), extra) : mats[n]); s.userData.h = h; s.userData.mound = mound; s.position.set(x, 0, z); s.scale.set(0, 0, 0); scene.add(s); users[n].push(s); cards.push(s); fit(s); return s;
   }
   function xprop(n, h, x, z) { // three crossed cards: reads as a full tree from every side
@@ -146,7 +146,7 @@
   const occ = []; for (const k of [130, 410, 520]) { const p = side(k, k % 2 ? 14 : -14); snowGlobe(p.x, p.z, 'img/bear-sit.webp'); solid.push([p.x, p.z, 4]); occ.push([p.x, p.z, 7]); }
   snowGlobe(0, 8, 'img/g/santabear.webp?v=2', 5.6, 4.6, true);
   for (const [a, r, img] of [[.9, 104, 'img/g/workshop.webp?v=2'], [2.6, 110, 'img/g/cuphouse.webp?v=2'], [4.4, 100, 'img/bear-sit.webp']]) { const x = Math.cos(a) * r, z = Math.sin(a) * r; snowGlobe(x, z, img, 14, 13, true); occ.push([x, z, 26]); solid.push([x, z, 13]); } occ.push([0, 8, 10], [ws.x, ws.z, 13]);
-  const lamps = []; for (let i = 6; i < N; i += 26) { const p = side(i, (i / 26 | 0) % 2 ? 6.2 : -6.2); occ.push([p.x, p.z, 4]); xprop('lamp', 6.6, p.x, p.z); const g = new T.Sprite(glow(0xffc070, .65)); g.position.set(p.x, 6.1, p.z); g.scale.set(5, 5, 1); scene.add(g); lamps.push(g); }
+  const lamps = []; for (let i = 6; i < N; i += 26) { const p = side(i, (i / 26 | 0) % 2 ? 6.2 : -6.2); occ.push([p.x, p.z, 4]); prop('lamp', 6.6, p.x, p.z); const g = new T.Sprite(glow(0xffc070, .65)); g.position.set(p.x, 6.1, p.z); g.scale.set(5, 5, 1); scene.add(g); lamps.push(g); }
   for (let i = 0; i < 20; i++) { const p = side(i * 30 + 11, (i % 2 ? 1 : -1) * rnd(15, 22)); if (Math.hypot(p.x, p.z) > 14) firs.push([p.x, p.z, rnd(7, 11), 1]); }
   for (let tries = 0, n = 0; n < (PHONE ? 90 : 150) && tries < 4000; tries++) { const a = rnd(0, 6.283), r = rnd(18, 230), x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (roadDist(x, z) < 11 || Math.hypot(x - ws.x, z - ws.z) < 14 || Math.hypot(x, z) < 16) continue; firs.push([x, z, rnd(7, 13), 0]); n++; }
