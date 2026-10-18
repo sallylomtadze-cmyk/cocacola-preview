@@ -166,10 +166,10 @@
     for (const f of firs) { const [x, z, h, d] = f, sq = d && x === 0 && z === -6;
       if (!sq && (occ.some(([ox, oz, r]) => Math.hypot(x - ox, z - oz) < r) || roadDist(x, z) < 9)) continue;
       if (ok.some(([x2, z2, h2]) => Math.hypot(x - x2, z - z2) < (h + h2) * .27)) continue; ok.push(f); }
-    ok.forEach(([x, z, h, d]) => { const G = xprop(d ? 'tree' : 'spruce', h, x, z); if (!d || (x === 0 && z === -6)) return;
+    ok.forEach(([x, z, h, d]) => { const G = xprop(d ? 'tree' : 'spruce', h, x, z); if (!d && Math.hypot(x, z) < (PHONE ? 90 : 140)) spr.push(G); if (!d || (x === 0 && z === -6)) return;
       const m = mats.tree.clone(); m.color.setHex(0x2a3348); G.children.forEach(c => c.material = m);
       const gl = new T.Sprite(glow(0xffc070, 0)); gl.position.set(x, h * .5, z); gl.scale.set(h * 1.1, h * 1.1, 1); scene.add(gl); wake.push({ x, z, m, gl, k: 0 }); }); }
-  const wake = [];
+  const wake = [], spr = [];
   function snowman(x, z, face, s = 1) { // a classic snowman with a red Coca-Cola scarf: three snowballs, coal eyes and buttons, carrot nose, top hat, twig arms
     const G = new T.Group(); G.position.set(x, 0, z); G.rotation.y = face; G.scale.setScalar(s); scene.add(G);
     const sm = new T.MeshLambertMaterial({ map: TX('snow', 1, 1), color: 0xf6f9ff, emissive: 0x0c1220 }), coal = new T.MeshPhongMaterial({ color: 0x111114, shininess: 40 });
@@ -204,6 +204,11 @@
     const smoke = []; for (let s = 0; s < 6; s++) { const m = new T.Sprite(new T.SpriteMaterial({ map: smokeTex, transparent: true, opacity: 0, depthWrite: false })); scene.add(m); smoke.push({ m, t: s / 6 }); }
     occ.push([p.x, p.z, 10]); houses.push({ litM, gl, bea, ring, col, smoke, p, h, door, L: 0, done: false }); solid.push([p.x, p.z, 5.2]);
   }
+  const extra = []; // free Sketchfab models (CC BY), placed in free spots beside the road before the forest fills in
+  { const want = [['townhouse', 17, 8.5], ['stall', 11, 5], ['chalet', 14, 6], ['sleigh', 9.5, 3], ['stall', 11, 5], ['townhouse', 17, 8.5], ['chalet', 14, 6], ['stall', 11, 5]];
+    let w = 0; for (let i = 40; i < N && w < want.length; i += 19) for (const d of [1, -1]) { if (w >= want.length) break; const [n, off, r] = want[w], p = side(i, off * d);
+      if (roadDist(p.x, p.z) < r + 4.6 || occ.concat(solid).some(([x, z, rr]) => Math.hypot(p.x - x, p.z - z) < rr + r)) continue;
+      extra.push({ n, x: p.x, z: p.z, f: faceRoad(p, i), i }); occ.push([p.x, p.z, r + 3]); solid.push([p.x, p.z, r * .8]); w++; } }
   forest();
   // the gondola line high over the valley
   const cable = [new T.Vector3(-260, 70, -150), new T.Vector3(260, 92, -40)];
@@ -386,6 +391,14 @@
   const add = s => new Promise((ok, no) => { const e = document.createElement('script'); e.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/' + s; e.onload = ok; e.onerror = no; document.head.appendChild(e); });
   (async () => { try { for (const s of ['shaders/CopyShader.js', 'shaders/LuminosityHighPassShader.js', 'shaders/GammaCorrectionShader.js', 'postprocessing/EffectComposer.js', 'postprocessing/RenderPass.js', 'postprocessing/ShaderPass.js', 'postprocessing/UnrealBloomPass.js']) await add(s);
       comp = new T.EffectComposer(R); comp.addPass(new T.RenderPass(scene, cam)); const b = new T.UnrealBloomPass(new T.Vector2(innerWidth, innerHeight), PHONE ? .55 : .75, .55, .82); comp.addPass(b); comp.addPass(new T.ShaderPass(T.GammaCorrectionShader)); comp._b = b; size(); } catch (e) { comp = null; } })();
-  window.__play = { open, close, S, side, houses, restart };
+  (async () => { try { await add('loaders/GLTFLoader.js'); // real 3D firs (Sketchfab "Christmas Tree" by whitewashstudio, CC BY) replace the near spruce cards; cards stay if this fails
+      const g = await new T.GLTFLoader().loadAsync('img/m/fir.glb?v=1'); let src; g.scene.traverse(o => { if (o.isMesh) src = o; });
+      const mat = new T.MeshLambertMaterial({ map: src.material.map, color: 0xd2f5d6, emissive: 0x030805 }), M = new T.InstancedMesh(src.geometry, mat, spr.length), q = new T.Object3D();
+      spr.forEach((G, i) => { const h = G.userData.h; q.position.set(G.position.x, -.05, G.position.z); q.rotation.set(0, rnd(0, 6.3), 0); q.scale.set(h * rnd(1, 1.15), h, h * rnd(1, 1.15)); q.updateMatrix(); M.setMatrixAt(i, q.matrix); scene.remove(G); });
+      M.frustumCulled = false; scene.add(M); window.__fir = M;
+      const L = new T.GLTFLoader(), kinds = {}; for (const e of extra) kinds[e.n] = 1;
+      for (const n of Object.keys(kinds)) L.load('img/m/' + n + '.glb?v=2', g => { g.scene.traverse(o => { if (o.isMesh && o.material.metalness !== undefined) { o.material.metalness = 0; o.material.envMapIntensity = 0; } });
+        for (const e of extra) if (e.n === n) { const m = g.scene.clone(); m.position.set(e.x, 0, e.z); m.rotation.y = e.f; scene.add(m); } }); } catch (e) { console.warn('fir', e); } })();
+  window.__play = { open, close, S, side, houses, restart, extra };
   open();
 })();
