@@ -170,6 +170,26 @@
       const m = mats.tree.clone(); m.color.setHex(0x2a3348); G.children.forEach(c => c.material = m);
       const gl = new T.Sprite(glow(0xffc070, 0)); gl.position.set(x, h * .5, z); gl.scale.set(h * 1.1, h * 1.1, 1); scene.add(gl); wake.push({ x, z, m, gl, k: 0 }); }); }
   const wake = [];
+  function snowman(x, z, face, s = 1) { // a classic snowman with a red Coca-Cola scarf: three snowballs, coal eyes and buttons, carrot nose, top hat, twig arms
+    const G = new T.Group(); G.position.set(x, 0, z); G.rotation.y = face; G.scale.setScalar(s); scene.add(G);
+    const sm = new T.MeshLambertMaterial({ map: TX('snow', 1, 1), color: 0xf6f9ff, emissive: 0x0c1220 }), coal = new T.MeshPhongMaterial({ color: 0x111114, shininess: 40 });
+    const balls = [[1.05, 1.0], [.78, 2.55], [.56, 3.65]]; balls.forEach(([r, y]) => { const b = new T.Mesh(new T.SphereGeometry(r, 28, 20), sm); b.position.y = y; b.scale.y = .94; G.add(b); });
+    for (const s2 of [-1, 1]) { const e = new T.Mesh(new T.SphereGeometry(.06, 10, 8), coal); e.position.set(s2 * .2, 3.82, .5); G.add(e); }
+    for (let i = 0; i < 3; i++) { const b = new T.Mesh(new T.SphereGeometry(.07, 10, 8), coal); b.position.set(0, 2.25 + i * .32, .76 - Math.abs(i - 1) * .04); G.add(b); }
+    const nose = new T.Mesh(new T.ConeGeometry(.08, .55, 12), new T.MeshLambertMaterial({ color: 0xf07a1c })); nose.rotation.x = Math.PI / 2; nose.position.set(0, 3.68, .78); G.add(nose);
+    const scarfM = new T.MeshLambertMaterial({ color: new T.Color(0xd8000b) });
+    const scarf = new T.Mesh(new T.TorusGeometry(.5, .13, 12, 32), scarfM); scarf.rotation.x = Math.PI / 2; scarf.position.y = 3.18; G.add(scarf);
+    const tail = new T.Mesh(new T.BoxGeometry(.22, .8, .07), scarfM); tail.position.set(.28, 2.85, .55); tail.rotation.z = .15; G.add(tail);
+    const hatM = new T.MeshPhongMaterial({ color: 0x15161a, shininess: 30 });
+    const brim = new T.Mesh(new T.CylinderGeometry(.62, .62, .06, 28), hatM); brim.position.y = 4.12; G.add(brim);
+    const crown = new T.Mesh(new T.CylinderGeometry(.4, .42, .7, 28), hatM); crown.position.y = 4.48; G.add(crown);
+    const band = new T.Mesh(new T.CylinderGeometry(.425, .435, .14, 28), scarfM); band.position.y = 4.2; G.add(band);
+    const wood = new T.MeshLambertMaterial({ color: 0x4a3222 });
+    for (const s2 of [-1, 1]) { const arm = new T.Mesh(new T.CylinderGeometry(.03, .045, 1.5, 6), wood); arm.position.set(s2 * 1.35, 2.85, 0); arm.rotation.z = s2 * -1.05; G.add(arm);
+      const tw = new T.Mesh(new T.CylinderGeometry(.015, .025, .4, 5), wood); tw.position.set(s2 * 1.85, 3.3, 0); tw.rotation.z = s2 * -.4; G.add(tw); }
+    const m = new T.Mesh(moundGeo, snowMat); m.scale.set(4, 1, 4); m.position.y = .05; G.add(m);
+    solid.push([x, z, 1.3 * s]); occ.push([x, z, 3 * s]); return G; }
+  snowman(11, 17, -.5, 1.1); for (const k of [80, 240, 470]) { const p = side(k, k % 2 ? -8.5 : 8.5); snowman(p.x, p.z, faceRoad(p, k), .95); }
   // houses: a paper-cup cottage or a gift-box cottage, dark until their gift arrives
   const houses = [], NH = 8;
   for (let k = 0; k < NH; k++) {
@@ -257,7 +277,29 @@
   const motes = []; for (let i = 0; i < (PHONE ? 50 : 110); i++) { const s = new T.Sprite(glow(i % 4 ? 0xffd890 : 0xcfe8ff, 0)); const k = rnd(.18, .5); s.scale.set(k, k, 1); scene.add(s); motes.push({ s, x: rnd(-40, 40), y: rnd(.5, 14), z: rnd(-40, 40), ph: rnd(0, 6.28), v: rnd(.1, .4) }); }
   // ---------- gifts that fly from the trailer to the doorstep ----------
   const giftM = [new T.MeshLambertMaterial({ color: 0xd8000b }), new T.MeshLambertMaterial({ color: 0xffffff })], flying = [];
-  function gift(o) { const g = new T.Group(); g.add(new T.Mesh(new T.BoxGeometry(1, .8, 1), giftM[0])); for (const r of [[1.02, .82, .18], [.18, .82, 1.02]]) g.add(new T.Mesh(new T.BoxGeometry(...r), giftM[1])); g.position.set(S.x, 4.6, S.z); scene.add(g); flying.push({ g, a: g.position.clone(), b: o.door.clone().setY(.4), t: 0, o }); }
+  // a proper gift box: body, overhanging lid, satin ribbons both ways, a bow of two loops and a knot, the white script on the front of the red ones
+  const paperTex = c => { const k = document.createElement('canvas'); k.width = k.height = 256; const x = k.getContext('2d'); x.fillStyle = c; x.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 900; i++) { x.fillStyle = `rgba(${Math.random() < .5 ? '0,0,0' : '255,255,255'},${rnd(.02, .05)})`; x.fillRect(rnd(0, 256), rnd(0, 256), rnd(1, 3), rnd(1, 3)); }
+    const t = new T.CanvasTexture(k); t.encoding = T.sRGBEncoding; return t; };
+  const STY = [['#c8000b', 0xffffff, 1], ['#d9d2c4', 0xb3000a, 0], ['#0f5a3a', 0xd8b25a, 0], ['#c8000b', 0xd8b25a, 1], ['#14213f', 0xd8b25a, 0]].map(([p, r, logo]) =>
+    ({ paper: new T.MeshLambertMaterial({ map: paperTex(p) }), rib: new T.MeshPhongMaterial({ color: new T.Color(r).convertSRGBToLinear(), shininess: 40, specular: 0x333333 }), logo }));
+  const logoT = new T.TextureLoader().load('img/logo-white.png'); logoT.encoding = T.sRGBEncoding;
+  const logoM = new T.MeshBasicMaterial({ map: logoT, transparent: true, depthWrite: false });
+  function giftBox(w = 1, h = .8, d = 1, st = 0) { const s = STY[st % STY.length], G = new T.Group(), lh = h * .22;
+    const body = new T.Mesh(new T.BoxGeometry(w, h - lh * .6, d), s.paper); body.position.y = (h - lh * .6) / 2; G.add(body);
+    const lid = new T.Mesh(new T.BoxGeometry(w * 1.06, lh, d * 1.06), s.paper); lid.position.y = h - lh / 2; G.add(lid);
+    const rw = Math.min(w, d) * .16; for (const [a, b] of [[w * 1.07, rw], [rw, d * 1.07]]) { const r = new T.Mesh(new T.BoxGeometry(a, h + .01, b), s.rib); r.position.y = h / 2; G.add(r); }
+    const loop = new T.TorusGeometry(Math.min(w, d) * .2, rw * .28, 8, 20);
+    for (const sgn of [-1, 1]) { const l = new T.Mesh(loop, s.rib); l.position.set(sgn * Math.min(w, d) * .17, h + Math.min(w, d) * .12, 0); l.rotation.set(0, Math.PI / 2, sgn * .55); l.scale.set(1, 1, .5); G.add(l); }
+    const knot = new T.Mesh(new T.SphereGeometry(rw * .55, 12, 10), s.rib); knot.position.y = h + rw * .2; G.add(knot);
+    if (s.logo) { const lw = w * .62, lp = new T.Mesh(new T.PlaneGeometry(lw, lw * 159 / 500), logoM); lp.position.set(-w * .24, (h - lh) * .42, d / 2 + .006); lp.scale.setScalar(.62); G.add(lp); }
+    return G; }
+  function giftPile(x, z, n, sc = 1) { const P = new T.Group(); P.position.set(x, 0, z); scene.add(P);
+    for (let i = 0; i < n; i++) { const w = rnd(.7, 1.5) * sc, h = rnd(.5, 1.1) * sc, d = rnd(.7, 1.4) * sc, b = giftBox(w, h, d, i), a = rnd(0, 6.28), r = rnd(.4, 2.2) * sc * (i ? 1 : 0);
+      b.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); b.rotation.y = rnd(0, 6.28); P.add(b); }
+    return P; }
+  giftPile(-1, -1, 12, 2.0);
+  function gift(o) { const g = new T.Group(); const b = giftBox(1.8, 1.4, 1.8, 0); b.position.y = -.7; g.add(b); g.position.set(S.x, 4.6, S.z); scene.add(g); flying.push({ g, a: g.position.clone(), b: o.door.clone().setY(.4), t: 0, o }); }
 
   // ---------- state, input ----------
   const trail = [], convoy = [];
@@ -316,7 +358,7 @@
       o.litM.forEach(m => m.emissive.setScalar(o.L * 1.15)); o.gl.material.opacity = o.L * (.5 + Math.sin(tt * 6 + o.p.x) * .03);
       o.smoke.forEach(s => { s.t = (s.t + dt * .14) % 1; s.m.position.set(o.p.x + Math.sin(s.t * 6 + o.p.z) * .5, o.h * .95 + s.t * 7, o.p.z); const k = 1.2 + s.t * 3.5; s.m.scale.set(k, k, 1); s.m.material.opacity = o.L * .45 * Math.sin(s.t * Math.PI); }); }
     for (let i = flying.length - 1; i >= 0; i--) { const f = flying[i]; f.t += dt / .9; const k = Math.min(1, f.t); f.g.position.lerpVectors(f.a, f.b, k); f.g.position.y += Math.sin(k * Math.PI) * 6; f.g.rotation.y += dt * 5;
-      if (k >= 1) { flying.splice(i, 1); scene.remove(f.g); f.o.L = .001; S.done++; setCount(); if (S.done === NH) S.end = .001; } }
+      if (k >= 1) { flying.splice(i, 1); scene.remove(f.g); giftPile(f.b.x, f.b.z, 4, 1.5); f.o.L = .001; S.done++; setCount(); if (S.done === NH) S.end = .001; } }
     if (S.end > 0) { S.end = Math.min(1, S.end + dt / 2.5); if (S.end > .6 && fin.hidden) { fin.hidden = false; finAt = performance.now(); } }
     lamps.forEach((g, i) => g.material.opacity = .55 + Math.sin(tt * 2 + i) * .05);
     gondolas.forEach(g => { g.u = (g.u + dt * .012) % 1; g.s.position.lerpVectors(cable[0], cable[1], g.u); g.s.position.y -= 7; });
