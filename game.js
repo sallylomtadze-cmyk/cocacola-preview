@@ -165,7 +165,7 @@
     const ok = [];
     for (const f of firs) { const [x, z, h, d] = f, sq = d && x === 0 && z === -6;
       if (!sq && (occ.some(([ox, oz, r]) => Math.hypot(x - ox, z - oz) < r) || roadDist(x, z) < 9)) continue;
-      if (ok.some(([x2, z2, h2]) => Math.hypot(x - x2, z - z2) < (h + h2) * .27)) continue; ok.push(f); }
+      if (ok.some(([x2, z2, h2, d2]) => Math.hypot(x - x2, z - z2) < (h + h2) * (d || d2 ? .27 : .19))) continue; ok.push(f); }
     ok.forEach(([x, z, h, d]) => { const G = xprop(d ? 'tree' : 'spruce', h, x, z); if (!d && Math.hypot(x, z) < (PHONE ? 90 : 140)) spr.push(G); if (!d || (x === 0 && z === -6)) return;
       const m = mats.tree.clone(); m.color.setHex(0x2a3348); G.children.forEach(c => c.material = m);
       const gl = new T.Sprite(glow(0xffc070, 0)); gl.position.set(x, h * .5, z); gl.scale.set(h * 1.1, h * 1.1, 1); scene.add(gl); wake.push({ x, z, m, gl, k: 0 }); }); }
@@ -394,10 +394,14 @@
   (async () => { try { await add('loaders/GLTFLoader.js'); // real 3D firs (Sketchfab "Christmas Tree" by whitewashstudio, CC BY) replace the near spruce cards; cards stay if this fails
       const g = await new T.GLTFLoader().loadAsync('img/m/fir.glb?v=1'); let src; g.scene.traverse(o => { if (o.isMesh) src = o; });
       const mat = new T.MeshLambertMaterial({ map: src.material.map, color: 0xd2f5d6, emissive: 0x030805 }), M = new T.InstancedMesh(src.geometry, mat, spr.length), q = new T.Object3D();
-      spr.forEach((G, i) => { const h = G.userData.h; q.position.set(G.position.x, -.05, G.position.z); q.rotation.set(0, rnd(0, 6.3), 0); q.scale.set(h * rnd(1, 1.15), h, h * rnd(1, 1.15)); q.updateMatrix(); M.setMatrixAt(i, q.matrix); scene.remove(G); });
+      const mound = new T.InstancedMesh(new T.SphereGeometry(1, 16, 8, 0, 6.3, 0, 1.2), new T.MeshLambertMaterial({ map: TX('snow', 1, 1), color: 0xf2f6ff, emissive: 0x0c1220 }), spr.length), tint = new T.Color();
+      spr.forEach((G, i) => { const h = G.userData.h * rnd(.9, 1.1), w = rnd(.85, 1.25); // no two trees alike: own height, girth, lean and shade, growing out of a snow drift
+        q.position.set(G.position.x, -h * .03, G.position.z); q.rotation.set(rnd(-.035, .035), rnd(0, 6.3), rnd(-.035, .035)); q.scale.set(h * w, h, h * w * rnd(.9, 1.1)); q.updateMatrix(); M.setMatrixAt(i, q.matrix);
+        M.setColorAt(i, tint.setHSL(rnd(.3, .38), rnd(.05, .25), rnd(.82, 1))); q.position.y = -h * .1; q.rotation.set(0, rnd(0, 6.3), 0); q.scale.set(h * .3 * w, h * .13, h * .3 * w); q.updateMatrix(); mound.setMatrixAt(i, q.matrix); scene.remove(G); });
+      mound.frustumCulled = false; scene.add(mound);
       M.frustumCulled = false; scene.add(M); window.__fir = M;
       const L = new T.GLTFLoader(), kinds = {}; for (const e of extra) kinds[e.n] = 1;
-      for (const n of Object.keys(kinds)) L.load('img/m/' + n + '.glb?v=2', g => { g.scene.traverse(o => { if (o.isMesh && o.material.metalness !== undefined) { o.material.metalness = 0; o.material.envMapIntensity = 0; } });
+      for (const n of Object.keys(kinds)) L.load('img/m/' + n + '.glb?v=2', g => { g.scene.traverse(o => { if (o.isMesh && o.material.metalness !== undefined) { o.material.metalness = 0; o.material.envMapIntensity = 0; o.material.color.multiplyScalar(.74); } });
         for (const e of extra) if (e.n === n) { const m = g.scene.clone(); m.position.set(e.x, 0, e.z); m.rotation.y = e.f; scene.add(m); } }); } catch (e) { console.warn('fir', e); } })();
   window.__play = { open, close, S, side, houses, restart, extra };
   open();
